@@ -14,11 +14,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [loading, setIsLoading] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const { login, googleLogin } = useAuth();
   const router = useRouter();
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    setError('');
     try {
       const isComplete = await googleLogin(credentialResponse.credential);
       if (isComplete) {
@@ -27,7 +30,8 @@ export default function LoginPage() {
         router.push('/complete-profile');
       }
     } catch (err) {
-      setError('Google Sign-In failed');
+      setError('Google Sign-In failed. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -37,11 +41,14 @@ export default function LoginPage() {
       setError('Please complete the ReCaptcha');
       return;
     }
+    setIsLoading(true);
+    setError('');
     try {
       await login(email, phone);
       router.push('/profile');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid credentials');
+      setIsLoading(false);
     }
   };
 
@@ -125,11 +132,15 @@ export default function LoginPage() {
 
            <button 
              type="submit"
-             disabled={!recaptchaToken}
+             disabled={!recaptchaToken || loading}
              className="w-full py-5 bg-primary text-white rounded-[25px] font-black text-lg shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
            >
-              <LogIn className="w-6 h-6" />
-              Sign Induction
+              {loading ? (
+                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <LogIn className="w-6 h-6" />
+              )}
+              {loading ? 'Processing...' : 'Sign Induction'}
            </button>
         </form>
 
