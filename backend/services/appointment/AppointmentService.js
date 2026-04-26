@@ -66,6 +66,18 @@ class AppointmentService {
       };
     }
 
+    if (query.customerId) {
+      queryObj.customer = query.customerId;
+    }
+
+    if (query.staffId) {
+      queryObj.staff = query.staffId;
+    }
+
+    if (query.status) {
+      queryObj.status = query.status;
+    }
+
     if (query.search) {
       // Find matching customers or services first
       const [customers, services] = await Promise.all([
