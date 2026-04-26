@@ -67,13 +67,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         {showSidebar && <Navbar onMenuClick={() => setMobileSidebarOpen(true)} />}
         <main style={{ 
           flex: 1, 
-          padding: showSidebar ? '1.25rem' : '0', // Default mobile-first padding
+          padding: showSidebar ? '1.25rem' : '0',
           width: '100%',
           maxWidth: '100%',
           margin: '0',
-          // Desktop specific adjustments via media query logic in CSS is better, but keeping consistency
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          minHeight: showSidebar ? 'auto' : '100vh'
         }} className="main-content-wrapper">
           {children}
         </main>
