@@ -19,9 +19,9 @@ import {
   ChevronRight,
   TrendingDown,
   MessageSquare,
-  ClipboardCheck,
   Clock,
-  Store
+  Store,
+  X
 } from 'lucide-react';
 import styles from '@/styles/layout/Sidebar.module.css';
 
@@ -49,7 +49,12 @@ const staffMenuItems = [
   { icon: Bell, label: 'Notifications', href: '/employee-portal?tab=notifications' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
@@ -58,10 +63,24 @@ export default function Sidebar() {
   const menuItems = isStaff ? staffMenuItems : adminMenuItems;
 
   return (
-    <aside className={collapsed ? styles.sidebarCollapsed : styles.sidebar}>
+    <aside className={`${collapsed ? styles.sidebarCollapsed : styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
       <div className={styles.header}>
-        {!collapsed && <h1 className={styles.logo}>BeautyBeats</h1>}
-        <button className={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
+        {!collapsed && (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
+               <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <h1 className={styles.logo}>BeautyBeats</h1>
+          </div>
+        )}
+        
+        {/* Mobile Close Button */}
+        <button className="lg:hidden p-2 text-gray-500" onClick={onClose}>
+          <X size={24} />
+        </button>
+
+        {/* Desktop Collapse Button */}
+        <button className={`${styles.collapseBtn} hidden lg:flex`} onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>
@@ -72,7 +91,7 @@ export default function Sidebar() {
           return (
             <Link key={item.label} href={item.href} className={active ? styles.linkActive : styles.link}>
               <item.icon size={22} className={active ? styles.iconActive : styles.icon} />
-              {!collapsed && <span>{item.label}</span>}
+              {(!collapsed || isOpen) && <span>{item.label}</span>}
             </Link>
           );
         })}

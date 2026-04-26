@@ -157,12 +157,12 @@ export default function EmployeePortal() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className={`${styles.sectionHeader} flex-mobile-column`} style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 className={styles.title}>Welcome, {user?.name}</h2>
           <p className={styles.subtitle}>Your personalized service dashboard and attendance control.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: 'max-content', marginTop: '1rem' }}>
           <button 
              onClick={() => setActivePortalTab('queue')}
              className="glass"
@@ -294,32 +294,33 @@ export default function EmployeePortal() {
             {appointments.map((app) => (
               <div 
                 key={app._id} 
-                className="glass" 
+                className={`glass flex-mobile-column`} 
                 style={{ 
                   padding: '1.75rem', 
                   borderRadius: '24px', 
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   alignItems: 'center',
+                  gap: '1.5rem',
                   background: app.status === 'IN_PROGRESS' || app.status === 'IN-PROGRESS' ? 'rgba(255, 59, 48, 0.05)' : 'rgba(255,255,255,0.6)',
                   border: app.status === 'IN_PROGRESS' || app.status === 'IN-PROGRESS' ? '2px solid var(--primary)' : '1px solid var(--border-light)',
                   boxShadow: app.status === 'IN_PROGRESS' || app.status === 'IN-PROGRESS' ? '0 10px 30px rgba(255, 59, 48, 0.15)' : 'none'
                 }}
               >
-                <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ 
                     width: '72px', 
                     height: '72px', 
-                    background: 'white', 
+                    background: app.status === 'COMPLETED' ? 'rgba(52, 199, 89, 0.08)' : 'white', 
                     borderRadius: '20px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    border: '1px solid var(--border-light)',
+                    border: app.status === 'COMPLETED' ? '2px solid #34C759' : '1px solid var(--border-light)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                   }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--primary)' }}>SLOT</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: app.status === 'COMPLETED' ? '#34C759' : 'var(--primary)' }}>{app.status === 'COMPLETED' ? 'FREE' : 'SLOT'}</span>
                     <span style={{ fontWeight: 900, fontSize: '1.25rem' }}>{app.timeSlot.split(' ')[0]}</span>
                   </div>
                   <div>
@@ -359,7 +360,7 @@ export default function EmployeePortal() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', width: '100%', maxWidth: 'max-content', justifyContent: 'flex-end' }}>
                    {(app.status === 'CONFIRMED' || app.status === 'PENDING') && (
                     <button 
                       className={styles.pageBtn}
@@ -367,6 +368,7 @@ export default function EmployeePortal() {
                       onClick={() => openConsentForm(app)}
                       style={{ 
                         padding: '12px 24px', 
+                        flex: 1,
                         background: (isClockedIn && !hasInProgress) ? 'var(--primary)' : 'rgba(0,0,0,0.1)', 
                         color: 'white',
                         fontWeight: 800,
@@ -377,7 +379,7 @@ export default function EmployeePortal() {
                       }}
                     >
                       <ClipboardCheck size={20} />
-                      {hasInProgress ? 'Active Session' : 'Attend Client'}
+                      {hasInProgress ? 'Active' : 'Attend'}
                     </button>
                   )}
                   {(app.status === 'IN_PROGRESS' || app.status === 'IN-PROGRESS') && (
@@ -386,6 +388,7 @@ export default function EmployeePortal() {
                       onClick={() => openPaymentModal(app)}
                       style={{ 
                         padding: '12px 24px', 
+                        flex: 1,
                         background: '#34C759', 
                         color: 'white',
                         fontWeight: 800,
@@ -395,13 +398,23 @@ export default function EmployeePortal() {
                       }}
                     >
                       <CreditCard size={20} />
-                      Finish Service
+                      Finish
                     </button>
                   )}
                   {app.status === 'COMPLETED' && (
-                    <div style={{ color: '#34C759', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 900 }}>
-                      <CheckCircle2 size={24} />
-                      COMPLETED
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <div style={{ color: '#34C759', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 900 }}>
+                        <CheckCircle2 size={24} />
+                        COMPLETED
+                      </div>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        fontWeight: 800, 
+                        color: '#34C759', 
+                        background: 'rgba(52, 199, 89, 0.1)', 
+                        padding: '3px 10px', 
+                        borderRadius: '8px'
+                      }}>Slot Available</span>
                     </div>
                   )}
                 </div>
@@ -462,7 +475,7 @@ export default function EmployeePortal() {
                     <h4 style={{ fontWeight: 800 }}>{item.profile.name}</h4>
                     <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.profile.phone}</p>
                   </div>
-                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }} className="mobile-hide-margin">
                     <span style={{ fontSize: '14px', fontWeight: 900, color: 'var(--primary)' }}>{item.count}</span>
                     <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 800 }}>SESSIONS</p>
                   </div>
@@ -490,7 +503,7 @@ export default function EmployeePortal() {
                  <p className="text-muted">No attendance logs found for this month.</p>
                ) : (
                  attendanceLogs.map((log) => (
-                   <div key={log._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1.25rem', background: 'white', borderRadius: '18px', border: '1px solid var(--border-light)' }}>
+                   <div key={log._id} className="flex-mobile-column" style={{ display: 'flex', justifyContent: 'space-between', padding: '1.25rem', background: 'white', borderRadius: '18px', border: '1px solid var(--border-light)', gap: '1rem' }}>
                       <div>
                         <p style={{ fontWeight: 900, fontSize: '1.1rem' }}>{new Date(log.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', marginTop: '4px' }}>

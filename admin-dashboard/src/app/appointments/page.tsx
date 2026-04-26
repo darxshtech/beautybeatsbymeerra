@@ -77,7 +77,7 @@ export default function Appointments() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className={styles.sectionHeader}>
         <div>
            <h2 className={styles.title}>Session Control</h2>
            <p className={styles.subtitle}>Track and manage individual appointments for your salon's daily operations.</p>
@@ -115,7 +115,7 @@ export default function Appointments() {
         </div>
       </header>
 
-      <div className={cardStyles.card} style={{ flexDirection: 'row', padding: '12px 20px', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className={cardStyles.card} style={{ display: 'flex', padding: '12px 20px', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
          <Search size={20} color="var(--text-muted)" />
          <input 
             type="text" 

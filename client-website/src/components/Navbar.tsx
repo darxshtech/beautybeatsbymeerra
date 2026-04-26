@@ -18,6 +18,16 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Prevent scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenu) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [mobileMenu]);
+
   return (
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-6 py-4",
@@ -64,15 +74,15 @@ export default function Navbar() {
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
-            className="fixed inset-0 bg-white z-[200] p-8 flex flex-col overflow-y-auto"
+            className="fixed inset-0 bg-white z-[200] p-8 flex flex-col h-screen overflow-hidden"
           >
-            <div className="flex justify-between items-center mb-12">
+            <div className="flex justify-between items-center mb-12 flex-shrink-0">
                <span className="text-2xl font-black tracking-tighter">BeautyBeats</span>
                <button onClick={() => setMobileMenu(false)} className="p-2 bg-gray-100 rounded-full">
                  <X className="w-6 h-6" />
                </button>
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 overflow-y-auto pb-12">
                {['Home', 'Services', 'Packages', 'Subscriptions', 'About', 'Contact', 'Profile'].map((item) => (
                 <Link key={item} href={item === 'Home' ? '/' : `/${item.toLowerCase()}`} onClick={() => setMobileMenu(false)} className="text-3xl font-black text-gray-900 border-b border-gray-100 pb-4">
                   {item}

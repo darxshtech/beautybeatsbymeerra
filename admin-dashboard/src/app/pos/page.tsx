@@ -85,7 +85,7 @@ export default function POSPage() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className={styles.sectionHeader}>
         <div>
           <h2 className={styles.title}>POS Terminal</h2>
           <p className={styles.subtitle}>Instant walk-in booking, loyalty redemption, and bill generation.</p>
@@ -96,7 +96,8 @@ export default function POSPage() {
           borderRadius: '12px', 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '8px' 
+          gap: '8px',
+          marginTop: '1rem'
         }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34C759', animation: 'pulse 2s infinite' }} />
           <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--primary)' }}>LIVE TERMINAL</span>
@@ -125,9 +126,9 @@ export default function POSPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
         {/* LEFT COLUMN */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
 
           {/* STEP 1: Customer Search */}
           <div className={cardStyles.card} style={{ padding: '1.5rem', gap: '1rem' }}>
@@ -145,9 +146,9 @@ export default function POSPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <div style={{ 
-                flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem',
+                flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '240px',
                 background: 'var(--bg-main)', borderRadius: '14px', padding: '0 16px',
                 border: '1px solid var(--border-light)'
               }}>
@@ -171,6 +172,7 @@ export default function POSPage() {
                 style={{ 
                   background: 'var(--primary)', color: 'white', 
                   padding: '14px 28px', borderRadius: '14px', 
+                  flex: 1, minWidth: '120px',
                   fontWeight: 800, fontSize: '14px', border: 'none', cursor: 'pointer',
                   opacity: loading || !phoneNumber ? 0.5 : 1,
                   transition: 'all 0.2s'
@@ -249,7 +251,7 @@ export default function POSPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+            <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
               {services.map(s => (
                 <button 
                   key={s._id}
@@ -292,7 +294,7 @@ export default function POSPage() {
         </div>
 
         {/* RIGHT COLUMN — Checkout Summary */}
-        <div style={{ position: 'sticky', top: '2rem' }}>
+        <div className="mobile-no-sticky" style={{ position: 'sticky', top: '2rem' }}>
           <div style={{ 
             background: 'white', borderRadius: '24px', padding: '2rem',
             border: '2px solid rgba(255, 59, 48, 0.12)', 

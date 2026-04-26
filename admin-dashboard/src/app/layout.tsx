@@ -15,22 +15,24 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Check local storage directly for a more immediate guard
     const hasToken = !!localStorage.getItem('bb_token');
-    
     if (!hasToken && pathname !== '/login') {
       router.push('/login');
     }
-    
     setCheckingAuth(false);
   }, [pathname, router]);
+
+  // Close sidebar on navigation
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname]);
 
   const isLoginPage = pathname === '/login';
   const showSidebar = isAuthenticated && !isLoginPage;
 
-  // Don't render dashboard content if we are in the middle of a redirect
   if (checkingAuth || (!isAuthenticated && !isLoginPage && !localStorage.getItem('bb_token'))) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100%', background: 'var(--bg-main)' }}>
@@ -40,17 +42,39 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ display: 'flex', background: 'var(--bg-main)', minHeight: '100vh' }}>
-      {showSidebar && <Sidebar />}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {showSidebar && <Navbar />}
+    <div style={{ 
+      display: 'flex', 
+      background: 'var(--bg-main)', 
+      minHeight: '100vh', 
+      position: 'relative',
+      overflowX: 'hidden' // Prevent any horizontal scrolling
+    }}>
+      {showSidebar && (
+        <>
+          <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+          {mobileSidebarOpen && (
+            <div 
+              onClick={() => setMobileSidebarOpen(false)}
+              style={{ 
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', 
+                zIndex: 150, backdropFilter: 'blur(4px)' 
+              }} 
+            />
+          )}
+        </>
+      )}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+        {showSidebar && <Navbar onMenuClick={() => setMobileSidebarOpen(true)} />}
         <main style={{ 
           flex: 1, 
-          padding: showSidebar ? '2.5rem' : '0', 
+          padding: showSidebar ? '1.25rem' : '0', // Default mobile-first padding
           width: '100%',
-          maxWidth: '1200px',
-          margin: showSidebar ? '0 auto' : '0'
-        }}>
+          maxWidth: '100%',
+          margin: '0',
+          // Desktop specific adjustments via media query logic in CSS is better, but keeping consistency
+          display: 'flex',
+          flexDirection: 'column'
+        }} className="main-content-wrapper">
           {children}
         </main>
       </div>

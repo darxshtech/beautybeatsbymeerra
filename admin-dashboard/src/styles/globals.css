@@ -88,3 +88,33 @@ ul {
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+
+@media (max-width: 768px) {
+  .flex-mobile-column {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+  
+  .mobile-hide-margin {
+    margin-left: 0 !important;
+    text-align: left !important;
+  }
+
+  .grid-mobile-1 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .mobile-no-sticky {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-content-wrapper {
+    padding: 2.5rem !important;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+  }
+}

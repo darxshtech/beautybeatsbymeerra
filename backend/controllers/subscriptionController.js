@@ -30,3 +30,11 @@ exports.updatePlan = async (req, res, next) => {
     next(err);
   }
 };
+exports.createPlan = async (req, res, next) => {
+  try {
+    const plan = await SubscriptionPlan.create(req.body);
+    res.status(201).json({ success: true, data: plan });
+  } catch (err) {
+    next(err);
+  }
+};

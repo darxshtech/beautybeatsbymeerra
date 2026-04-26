@@ -109,25 +109,28 @@ export default function Dashboard() {
           <header className={styles.sectionHeader} style={{ marginBottom: '0.5rem' }}>
              <h3 className={styles.subtitle} style={{ fontWeight: 700, fontSize: '1.1rem' }}>Upcoming Schedule</h3>
           </header>
+          
           {upcomingAppointments.length > 0 ? (
-            <Table 
-               columns={[
-                 { key: 'customer', label: 'Customer' },
-                 { key: 'service', label: 'Service' },
-                 { key: 'time', label: 'Time' },
-                 { key: 'status', label: 'Status', render: (val) => (
-                   <span style={{ 
-                     background: val.statusRaw === 'COMPLETED' ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 149, 0, 0.1)',
-                     color: val.statusRaw === 'COMPLETED' ? '#34C759' : '#FF9500',
-                     padding: '4px 12px',
-                     borderRadius: '12px',
-                     fontSize: '12px',
-                     fontWeight: 700
-                   }}>{val.status}</span>
-                 )}
-               ]}
-               data={upcomingAppointments}
-            />
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table 
+                 columns={[
+                   { key: 'customer', label: 'Customer' },
+                   { key: 'service', label: 'Service' },
+                   { key: 'time', label: 'Time' },
+                   { key: 'status', label: 'Status', render: (val) => (
+                     <span style={{ 
+                       background: val.statusRaw === 'COMPLETED' ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 149, 0, 0.1)',
+                       color: val.statusRaw === 'COMPLETED' ? '#34C759' : '#FF9500',
+                       padding: '4px 12px',
+                       borderRadius: '12px',
+                       fontSize: '12px',
+                       fontWeight: 700
+                     }}>{val.status}</span>
+                   )}
+                 ]}
+                 data={upcomingAppointments}
+              />
+            </div>
           ) : (
             <div className={cardStyles.card} style={{ padding: '2rem', textAlign: 'center' }}>
               <p style={{ color: 'var(--text-muted)' }}>No upcoming appointments today.</p>

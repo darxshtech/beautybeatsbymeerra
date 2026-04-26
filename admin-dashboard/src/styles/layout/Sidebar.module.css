@@ -9,6 +9,30 @@
   transition: var(--transition);
   position: sticky;
   top: 0;
+  z-index: 100;
+}
+
+@media (max-width: 1024px) {
+  .sidebar, .sidebarCollapsed {
+    position: fixed;
+    left: -280px; /* Hide completely off-screen */
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 500; /* Above everything */
+    background: var(--bg-sidebar);
+    box-shadow: 20px 0 60px rgba(0,0,0,0.15);
+    transition: left 0.3s ease;
+  }
+  
+  .sidebarOpen {
+    left: 0;
+  }
+
+  .collapseBtn {
+    display: none !important;
+  }
 }
 
 .sidebarCollapsed {

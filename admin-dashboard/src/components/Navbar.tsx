@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Bell, LogOut, Moon, Sun, Clock, Check, CheckCheck } from 'lucide-react';
+import { Search, User, Bell, LogOut, Moon, Sun, Clock, Check, CheckCheck, Volume2, VolumeX, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/services/api';
@@ -17,75 +17,139 @@ interface AdminNotif {
   paymentInfo?: { method: string; amount: number; transactionId: string };
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout, isAdmin, isAuthenticated } = useAuth();
   const router = useRouter();
   const [notifCount, setNotifCount] = useState(0);
   const [notifications, setNotifications] = useState<AdminNotif[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const lastSpokenRef = useRef<string>('');
+  
+  // Voice & Real-time State
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const spokenNotifsRef = useRef<Set<string>>(new Set());
+  const speechQueueRef = useRef<string[]>([]);
+  const isSpeakingRef = useRef(false);
 
-  // Speaking Notification Bot using Web SpeechSynthesis API
-  const speakNotification = (text: string) => {
-    if (!text || text === lastSpokenRef.current) return;
-    lastSpokenRef.current = text;
+  // Load voices immediately and on change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const loadVoices = () => window.speechSynthesis.getVoices();
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  // Advanced Voice Queue System
+  const processQueue = () => {
+    if (!voiceEnabled || isSpeakingRef.current || speechQueueRef.current.length === 0) return;
+    
+    const text = speechQueueRef.current.shift();
+    if (!text) return;
+
     try {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // stop any ongoing speech
+        // Cancel current if any, but better to queue
+        isSpeakingRef.current = true;
+        
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.95;
-        utterance.pitch = 1.1;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
         utterance.volume = 1;
-        // Try to pick a female English voice
+        
         const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(v => v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google UK English Female'));
+        const preferred = voices.find(v => 
+          v.name.includes('Female') || 
+          v.name.includes('Zira') || 
+          v.name.includes('Google UK English Female') ||
+          v.lang.startsWith('en-GB')
+        );
         if (preferred) utterance.voice = preferred;
+
+        utterance.onend = () => {
+          isSpeakingRef.current = false;
+          setTimeout(processQueue, 500); 
+        };
+
+        utterance.onerror = () => {
+          isSpeakingRef.current = false;
+          processQueue();
+        };
+
         window.speechSynthesis.speak(utterance);
       }
     } catch (e) {
-      console.log('Speech not available:', e);
+      isSpeakingRef.current = false;
+      console.error('Speech error:', e);
     }
   };
 
-  // Fetch admin notifications (real-time speaking bot)
+  const speakNotification = (text: string) => {
+    if (!voiceEnabled) return;
+    speechQueueRef.current.push(text);
+    processQueue();
+  };
+
+  // Real-time Fetching
   useEffect(() => {
-    // Ensure voices are loaded
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
+    if (!isAuthenticated) return;
 
     const fetchNotifs = async () => {
-      if (!isAuthenticated) return;
       try {
         if (isAdmin) {
-          const countRes = await apiRequest('/admin-notifications/count');
-          if (countRes.success) {
-             if (countRes.count > notifCount && notifCount > 0) {
-               // Fetch latest notification to speak it
-               try {
-                 const latest = await apiRequest('/admin-notifications?limit=1');
-                 if (latest.success && latest.data?.[0]) {
-                   const n = latest.data[0];
-                   speakNotification(`New alert. ${n.title}. ${n.message}`);
-                 }
-               } catch {}
-             }
-             setNotifCount(countRes.count);
+          const res = await apiRequest('/admin-notifications?limit=5');
+          if (res.success && res.data) {
+            const newNotifs = res.data.filter((n: AdminNotif) => !n.isRead && !spokenNotifsRef.current.has(n._id));
+            
+            if (newNotifs.length > 0) {
+              [...newNotifs].reverse().forEach((n: AdminNotif) => {
+                spokenNotifsRef.current.add(n._id);
+                // Only queue if voice is actually enabled
+                if (voiceEnabled) speakNotification(`${n.title}. ${n.message}`);
+              });
+            }
+            
+            const countRes = await apiRequest('/admin-notifications/count');
+            if (countRes.success) setNotifCount(countRes.count);
           }
         } else {
           const json = await apiRequest('/notifications');
-          if (json.success && json.data?.length > notifCount && notifCount > 0) {
-            speakNotification('You have new notifications waiting.');
+          if (json.success && json.data) {
+             const unread = json.data.filter((n: any) => !n.isRead && !spokenNotifsRef.current.has(n._id));
+             if (unread.length > 0) {
+                if (voiceEnabled) speakNotification(`Attention. You have ${unread.length} new notifications.`);
+                unread.forEach((n: any) => spokenNotifsRef.current.add(n._id));
+             }
+             setNotifCount(json.data.length || 0);
           }
-          if (json.success) setNotifCount(json.data?.length || 0);
         }
-      } catch {}
+      } catch (err) {
+        console.error('Notification fetching failed:', err);
+      }
     };
+
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 10000); // Check every 10 seconds for real-time feel
+    const interval = setInterval(fetchNotifs, 4000); 
     return () => clearInterval(interval);
-  }, [isAdmin, isAuthenticated, notifCount]);
+  }, [isAdmin, isAuthenticated, voiceEnabled]);
+
+  const toggleVoice = () => {
+    if (!voiceEnabled) {
+      // satisfy browser gesture requirement
+      const dummy = new SpeechSynthesisUtterance("Voice alerts enabled");
+      dummy.volume = 0; // Silent first speak to unlock
+      window.speechSynthesis.speak(dummy);
+      setVoiceEnabled(true);
+    } else {
+      window.speechSynthesis.cancel();
+      setVoiceEnabled(false);
+      speechQueueRef.current = [];
+    }
+  };
 
   const fetchDropdownNotifs = async () => {
     try {
@@ -117,7 +181,6 @@ export default function Navbar() {
     } catch {}
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -153,21 +216,34 @@ export default function Navbar() {
 
   return (
     <header className={styles.navbar}>
-       <div className={styles.searchBar}>
-          <Search size={18} color="var(--text-muted)" />
-          <input 
-            type="text" 
-            placeholder="Search platform data..." 
-            className={styles.searchInput}
-          />
+       <div className="flex items-center gap-3">
+          <button className="lg:hidden p-2 -ml-2 text-gray-900" onClick={onMenuClick}>
+             <Menu className="w-6 h-6" />
+          </button>
+          <div className={styles.searchBar}>
+             <Search size={18} color="var(--text-muted)" />
+             <input 
+               type="text" 
+               placeholder="Search..." 
+               className={styles.searchInput}
+             />
+          </div>
        </div>
 
        <div className={styles.rightNav}>
+          {/* Voice Toggle Button */}
+          <button 
+            className={`${styles.navIcon} ${voiceEnabled ? styles.voiceActive : ''}`} 
+            onClick={toggleVoice}
+            title={voiceEnabled ? "Mute Voice Alerts" : "Enable Voice Alerts"}
+          >
+             {voiceEnabled ? <Volume2 size={20} color="var(--primary)" /> : <VolumeX size={20} />}
+          </button>
+
           <button className={styles.navIcon} title="Toggle Dark/Light Mode">
              <Sun size={20} />
           </button>
           
-          {/* Notification Bell with Dropdown */}
           <div ref={dropdownRef} style={{ position: 'relative' }}>
             <button 
               className={`${styles.navIcon} ${notifCount > 0 ? styles.bellActive : ''}`}
@@ -183,7 +259,6 @@ export default function Navbar() {
                <Bell size={20} className={notifCount > 0 ? styles.bellRing : ''} />
             </button>
 
-            {/* Notification Dropdown */}
             {showDropdown && isAdmin && (
               <div className={styles.notifDropdown}>
                 <div className={styles.notifHeader}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, Check, X, Tag } from 'lucide-react';
+import { Pencil, Check, X, Tag, Plus } from 'lucide-react';
 import Table from '@/components/Table';
 import Modal from '@/components/Modal';
 import { apiRequest } from '@/services/api';
@@ -11,8 +11,20 @@ import cardStyles from '@/styles/components/Card.module.css';
 export default function AdminSubscriptions() {
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const initialPlan = {
+    name: '',
+    code: '',
+    price: '₹',
+    interval: 'monthly',
+    features: [''],
+    popular: false,
+    isActive: true,
+    color: 'from-primary to-rose-600'
+  };
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -29,26 +41,37 @@ export default function AdminSubscriptions() {
   useEffect(() => { fetchPlans(); }, []);
 
   const handleEdit = (plan: any) => {
-    setEditingPlan(plan);
-    setIsEditModalOpen(true);
+    setEditingPlan({ ...plan });
+    setIsCreating(false);
+    setIsModalOpen(true);
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleAddNew = () => {
+    setEditingPlan({ ...initialPlan });
+    setIsCreating(true);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await apiRequest(`/subscriptions/${editingPlan._id}`, {
-        method: 'PUT',
+      const url = isCreating ? '/subscriptions' : `/subscriptions/${editingPlan._id}`;
+      const method = isCreating ? 'POST' : 'PUT';
+      
+      const res = await apiRequest(url, {
+        method,
         body: editingPlan
       });
+      
       if (res.success) {
-        alert('Plan updated successfully!');
-        setIsEditModalOpen(false);
+        alert(isCreating ? 'Plan created successfully!' : 'Plan updated successfully!');
+        setIsModalOpen(false);
         fetchPlans();
       } else {
-        alert(res.message || 'Failed to update plan');
+        alert(res.message || 'Action failed');
       }
     } catch (err) {
-      alert('Error updating plan');
+      alert('Error saving plan');
     }
   };
 
@@ -73,8 +96,13 @@ export default function AdminSubscriptions() {
   return (
     <div className={styles.container}>
       <header className={styles.sectionHeader}>
-        <h2 className={styles.title}>Subscription Plans</h2>
-        <p className={styles.subtitle}>Customize the membership plans offered on your client website.</p>
+        <div>
+          <h2 className={styles.title}>Subscription Plans</h2>
+          <p className={styles.subtitle}>Customize the membership plans offered on your client website.</p>
+        </div>
+        <button className={styles.pageBtn} style={{ background: 'var(--primary)', color: 'white' }} onClick={handleAddNew}>
+          <Plus size={18} style={{ marginRight: '6px' }} /> Add New Plan
+        </button>
       </header>
 
       <div className={cardStyles.card}>
@@ -85,27 +113,43 @@ export default function AdminSubscriptions() {
         )}
       </div>
 
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Subscription Plan">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isCreating ? "Create Subscription Plan" : "Edit Subscription Plan"}>
         {editingPlan && (
-          <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Plan Name</label>
-              <input 
-                type="text" 
-                className={styles.input} 
-                value={editingPlan.name} 
-                onChange={e => setEditingPlan({...editingPlan, name: e.target.value})} 
-                required 
-              />
-            </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Price</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Plan Name</label>
+                <input 
+                  type="text" 
+                  className={styles.input} 
+                  value={editingPlan.name} 
+                  onChange={e => setEditingPlan({...editingPlan, name: e.target.value})} 
+                  placeholder="e.g. Silver Membership"
+                  required 
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Unique Code</label>
+                <input 
+                  type="text" 
+                  className={styles.input} 
+                  value={editingPlan.code} 
+                  onChange={e => setEditingPlan({...editingPlan, code: e.target.value.toUpperCase()})} 
+                  placeholder="e.g. SILVER_V1"
+                  required 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Price (with Symbol)</label>
                 <input 
                   type="text" 
                   className={styles.input} 
                   value={editingPlan.price} 
                   onChange={e => setEditingPlan({...editingPlan, price: e.target.value})} 
+                  placeholder="₹999"
                   required 
                 />
               </div>
@@ -118,20 +162,24 @@ export default function AdminSubscriptions() {
                 >
                   <option value="monthly">Monthly</option>
                   <option value="yearly">Yearly</option>
+                  <option value="quarterly">Quarterly</option>
                 </select>
               </div>
             </div>
+
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700 }}>Features (comma separated)</label>
               <textarea 
                 className={styles.input} 
                 rows={4}
                 value={editingPlan.features.join(', ')} 
-                onChange={e => setEditingPlan({...editingPlan, features: e.target.value.split(',').map((f:string) => f.trim())})} 
+                onChange={e => setEditingPlan({...editingPlan, features: e.target.value.split(',').map((f:string) => f.trim()).filter((f:string) => f !== '')})} 
+                placeholder="Feature 1, Feature 2, Feature 3"
               />
             </div>
+
             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={editingPlan.popular} 
@@ -139,7 +187,7 @@ export default function AdminSubscriptions() {
                 />
                 Mark as Most Popular
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={editingPlan.isActive} 
@@ -148,8 +196,9 @@ export default function AdminSubscriptions() {
                 Active (Visible to Clients)
               </label>
             </div>
-            <button type="submit" className={styles.pageBtn} style={{ background: 'var(--primary)', color: 'white', marginTop: '1rem', padding: '12px' }}>
-              Save Changes
+
+            <button type="submit" className={styles.pageBtn} style={{ background: 'var(--primary)', color: 'white', marginTop: '1rem', padding: '14px' }}>
+              {isCreating ? 'Create Plan Now' : 'Save Changes'}
             </button>
           </form>
         )}

@@ -217,10 +217,31 @@ class AppointmentService {
     const user = await User.findById(finalCustomerId);
     const WhatsappService = require('../notification/WhatsappService');
     
-    // Notify Customer
+    // Notify Customer (Template based for new clients)
     if (user && user.phone) {
-      const msg = `Hello ${user.name}! 🌟 Your appointment at BeautyBeats is confirmed for ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}. We look forward to seeing you!`;
-      WhatsappService.sendMessage(user.phone, msg).catch(err => console.error('Booking WhatsApp Error:', err));
+      // Components for the template (e.g. {{1}} = name, {{2}} = date, {{3}} = time)
+      const components = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: user.name },
+            { type: 'text', text: new Date(appointmentDate).toLocaleDateString() },
+            { type: 'text', text: timeSlot }
+          ]
+        }
+      ];
+
+      // Try sending template first (Works for new clients)
+      WhatsappService.sendTemplateMessage(user.phone, 'appointment_confirmation', components)
+        .then(res => {
+          if (!res.success) {
+            console.warn('[WHATSAPP] Template failed, falling back to raw text:', res.error);
+            // Fallback to raw text for existing sessions
+            const msg = `Hello ${user.name}! 🌟 Your appointment at BeautyBeats is confirmed for ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`;
+            WhatsappService.sendMessage(user.phone, msg);
+          }
+        })
+        .catch(err => console.error('Booking WhatsApp Error:', err));
     }
 
     // Notify Specialist (Staff)

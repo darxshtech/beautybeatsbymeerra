@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import styles from '@/styles/layout/Dashboard.module.css';
-import { CreditCard, CheckCircle2, IndianRupee } from 'lucide-react';
+import { CreditCard, CheckCircle2, IndianRupee, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { apiRequest } from '@/services/api';
 
 interface PaymentModalProps {
@@ -17,18 +17,33 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
   const [formData, setFormData] = useState({
     paymentMethod: "CASH",
     amount: (appointment?.service?.price || 0).toString(),
-    transactionId: ""
+    transactionId: "",
+    paymentVerified: false
   });
   const [loading, setLoading] = useState(false);
 
+  const requiresVerification = formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block submission if UPI/Card is not verified by employee
+    if (requiresVerification && !formData.paymentVerified) {
+      alert('Please verify the payment before finishing the service.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await apiRequest(`/appointments/${appointment._id}/finish`, {
         method: 'POST',
-        body: formData
+        body: {
+          paymentMethod: formData.paymentMethod,
+          amount: formData.amount,
+          transactionId: formData.transactionId,
+          paymentVerified: formData.paymentVerified
+        }
       });
 
       if (res.success) {
@@ -71,7 +86,7 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
            <select 
              className={styles.input}
              value={formData.paymentMethod}
-             onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
+             onChange={e => setFormData({...formData, paymentMethod: e.target.value, paymentVerified: false, transactionId: ''})}
            >
              <option value="CASH">Cash</option>
              <option value="UPI">UPI (GooglePay/PhonePe)</option>
@@ -80,31 +95,99 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
            </select>
         </div>
 
-        {formData.paymentMethod === 'UPI' && (
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>UPI Transaction ID / Ref No.</label>
-              <input 
-                required 
-                className={styles.input} 
-                placeholder="e.g. 123456789012"
-                value={formData.transactionId}
-                onChange={e => setFormData({...formData, transactionId: e.target.value})}
-              />
-           </div>
+        {/* UPI/Card Verification Section */}
+        {requiresVerification && (
+          <div style={{ 
+            border: formData.paymentVerified ? '2px solid #34C759' : '2px solid #FF9500',
+            borderRadius: '16px',
+            padding: '1.25rem',
+            background: formData.paymentVerified ? 'rgba(52, 199, 89, 0.04)' : 'rgba(255, 149, 0, 0.04)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+              {formData.paymentVerified ? (
+                <ShieldCheck size={20} color="#34C759" />
+              ) : (
+                <AlertTriangle size={20} color="#FF9500" />
+              )}
+              <span style={{ 
+                fontWeight: 900, 
+                fontSize: '0.85rem', 
+                color: formData.paymentVerified ? '#34C759' : '#FF9500',
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em'
+              }}>
+                {formData.paymentVerified ? 'Payment Verified ✓' : 'Verify Payment Before Finishing'}
+              </span>
+            </div>
+
+            {formData.paymentMethod === 'UPI' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>UPI Transaction ID / Ref No.</label>
+                <input 
+                  required 
+                  className={styles.input} 
+                  placeholder="e.g. 123456789012"
+                  value={formData.transactionId}
+                  onChange={e => setFormData({...formData, transactionId: e.target.value})}
+                />
+              </div>
+            )}
+
+            {formData.paymentMethod === 'CARD' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Card Transaction Ref / Last 4 Digits</label>
+                <input 
+                  required 
+                  className={styles.input} 
+                  placeholder="e.g. TXN-1234 or Card ending 5678"
+                  value={formData.transactionId}
+                  onChange={e => setFormData({...formData, transactionId: e.target.value})}
+                />
+              </div>
+            )}
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 600 }}>
+              Please confirm that you have received/verified the {formData.paymentMethod} payment of ₹{formData.amount} from the customer.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setFormData({...formData, paymentVerified: !formData.paymentVerified})}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                background: formData.paymentVerified ? '#34C759' : '#FF9500',
+                color: 'white',
+                transition: 'all 0.2s'
+              }}
+            >
+              <ShieldCheck size={18} />
+              {formData.paymentVerified ? 'Verified ✓ (tap to undo)' : 'I confirm payment is received'}
+            </button>
+          </div>
         )}
 
         <div className="glass" style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(52, 199, 89, 0.05)', border: '1px dashed #34C759' }}>
            <p style={{ fontSize: '0.8rem', color: '#34C759', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
              <CheckCircle2 size={16} /> 
-             Admin will be notified about this payment.
+             Admin will be notified about this payment. Slot will be freed after completion.
            </p>
         </div>
 
         <button 
           type="submit" 
-          disabled={loading}
+          disabled={loading || (requiresVerification && !formData.paymentVerified)}
           style={{ 
-            background: '#34C759', 
+            background: (requiresVerification && !formData.paymentVerified) ? 'rgba(0,0,0,0.15)' : '#34C759', 
             color: 'white', 
             padding: '12px', 
             borderRadius: '12px', 
@@ -113,7 +196,9 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: '0.5rem'
+            marginTop: '0.5rem',
+            cursor: (requiresVerification && !formData.paymentVerified) ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s'
           }}
         >
           {loading ? 'Processing...' : (
