@@ -8,14 +8,12 @@ import { User, Phone, LogIn, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 import { GoogleLogin } from '@react-oauth/google';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setIsLoading] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const { login, googleLogin } = useAuth();
   const router = useRouter();
 
@@ -37,10 +35,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recaptchaToken) {
-      setError('Please complete the ReCaptcha');
-      return;
-    }
     setIsLoading(true);
     setError('');
     try {
@@ -93,10 +87,11 @@ export default function LoginPage() {
                  <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                  <input 
                    required
+                   disabled={loading}
                    type="email"
                    value={email}
                    onChange={e => setEmail(e.target.value)}
-                   className="w-full pl-14 pr-6 py-5 bg-gray-50 rounded-[25px] border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-gray-900"
+                   className="w-full pl-14 pr-6 py-5 bg-gray-50 rounded-[25px] border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-gray-900 disabled:opacity-50"
                    placeholder="meera@example.com"
                  />
               </div>
@@ -108,31 +103,19 @@ export default function LoginPage() {
                  <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                  <input 
                    required
+                   disabled={loading}
                    type="password"
                    value={phone}
                    onChange={e => setPhone(e.target.value)}
-                   className="w-full pl-14 pr-6 py-5 bg-gray-50 rounded-[25px] border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-gray-900"
+                   className="w-full pl-14 pr-6 py-5 bg-gray-50 rounded-[25px] border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-gray-900 disabled:opacity-50"
                    placeholder="Enter your phone"
                  />
               </div>
            </div>
 
-           <div className="flex justify-center scale-90 -mx-10">
-              {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ? (
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                  onChange={(token: string | null) => setRecaptchaToken(token)}
-                />
-              ) : (
-                <div className="text-[10px] text-amber-600 font-black uppercase tracking-widest bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">
-                  ReCaptcha Configuration Missing
-                </div>
-              )}
-           </div>
-
            <button 
              type="submit"
-             disabled={!recaptchaToken || loading}
+             disabled={loading}
              className="w-full py-5 bg-primary text-white rounded-[25px] font-black text-lg shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
            >
               {loading ? (
