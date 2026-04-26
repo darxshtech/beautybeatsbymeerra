@@ -30,17 +30,27 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Voice & Real-time State
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const spokenNotifsRef = useRef<Set<string>>(new Set());
   const speechQueueRef = useRef<string[]>([]);
   const isSpeakingRef = useRef(false);
 
-  // Load voices immediately and on change
+  // Load voices immediately and on change + Auto-Unlock for browsers
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const loadVoices = () => window.speechSynthesis.getVoices();
       loadVoices();
       window.speechSynthesis.onvoiceschanged = loadVoices;
+
+      // Browser "Auto-Unlock" logic - first interaction enables speech
+      const unlockSpeech = () => {
+        const dummy = new SpeechSynthesisUtterance(" ");
+        dummy.volume = 0;
+        window.speechSynthesis.speak(dummy);
+        window.removeEventListener('click', unlockSpeech);
+      };
+      window.addEventListener('click', unlockSpeech);
+      return () => window.removeEventListener('click', unlockSpeech);
     }
   }, []);
 
