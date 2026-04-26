@@ -43,11 +43,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ 
-      display: 'flex', 
+      display: showSidebar ? 'flex' : 'block', 
       background: 'var(--bg-main)', 
       minHeight: '100vh', 
       position: 'relative',
-      overflowX: 'hidden' // Prevent any horizontal scrolling
+      overflowX: 'hidden'
     }}>
       {showSidebar && (
         <>
@@ -63,7 +63,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           )}
         </>
       )}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+      <div style={{ flex: showSidebar ? 1 : 'none', display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
         {showSidebar && <Navbar onMenuClick={() => setMobileSidebarOpen(true)} />}
         <main style={{ 
           flex: 1, 
