@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FF3B30;
+  --color-primary-light: #FEE2E2;
+  --color-primary-dark: #D70015;
+  --color-secondary: #FFFFFF;
+  --color-accent: #F9FAFB;
+  --color-muted: #86868B;
+  
+  --background: #FBFBFD;
+  --foreground: #1D1D1F;
+}
+
+:root {
+  /* Core Variables for CSS Modules & Components */
+  --primary: #FF3B30;
+  --primary-dark: #D70015;
+  --bg-main: #FBFBFD;
+  --bg-sidebar: #FFFFFF;
+  --text-main: #1D1D1F;
+  --text-muted: #86868B;
+  --border-light: #E5E5E7;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.08);
+
+  /* Transitions & Radii */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+}
+
+[data-theme='dark'] {
+  --bg-main: #010101;
+  --bg-sidebar: #0A0A0A;
+  --text-main: #F5F5F7;
+  --text-muted: #98989D;
+  --border-light: #222222;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: var(--transition);
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+/* Glassmorphism Class Helper */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #FF3B30 0%, #D70015 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
