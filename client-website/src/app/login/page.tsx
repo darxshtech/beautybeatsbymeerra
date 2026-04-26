@@ -77,7 +77,7 @@ export default function LoginPage() {
              onError={() => setError('Google Sign-In failed')}
              shape="circle"
              width="350"
-             use_fedcm_for_prompt={false}
+             use_fedcm_for_prompt={true}
            />
            <div className="flex items-center gap-4 py-2">
               <div className="flex-1 h-[1px] bg-gray-100" />
