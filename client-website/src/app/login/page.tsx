@@ -27,8 +27,10 @@ export default function LoginPage() {
       } else {
         router.push('/complete-profile');
       }
-    } catch (err) {
-      setError('Google Sign-In failed. Please try again.');
+    } catch (err: any) {
+      console.error('Google Login Error:', err);
+      setError(err.response?.data?.error || 'Google Sign-In failed. Please check your internet or try again.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -41,7 +43,9 @@ export default function LoginPage() {
       await login(email, phone);
       router.push('/profile');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid credentials');
+      console.error('Manual Login Error:', err);
+      setError(err.response?.data?.error || 'Login failed. Please check your credentials and backend connection.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -63,12 +67,15 @@ export default function LoginPage() {
            <p className="text-gray-500 font-bold text-sm mt-2">Welcome back to the BeautyBeats enclave.</p>
         </header>
 
-        {error && <p className="text-red-500 text-center text-sm font-bold mb-6">{error}</p>}
+        {error && <p className="text-red-500 text-center text-sm font-bold mb-6 px-4 bg-red-50 py-3 rounded-2xl border border-red-100">{error}</p>}
 
         <div className="flex flex-col gap-4 mb-8">
            <GoogleLogin
              onSuccess={handleGoogleSuccess}
-             onError={() => setError('Google Sign-In failed')}
+             onError={() => {
+               setError('Google Sign-In failed to initialize.');
+               setIsLoading(false);
+             }}
              shape="circle"
              width="350"
              use_fedcm_for_prompt={true}

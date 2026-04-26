@@ -41,6 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (res.data.success) {
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
+    } else {
+      throw new Error(res.data.error || 'Login failed');
     }
   };
 
@@ -50,15 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       return res.data.isProfileComplete;
+    } else {
+      throw new Error(res.data.error || 'Google Login failed');
     }
-    return false;
   };
 
   const completeProfile = async (data: any) => {
-    // Using the secure /profile endpoint which identifies the user automatically
     const res = await apiClient.put('/users/profile', { ...data, isProfileComplete: true });
     if (res.data.success) {
       setUser(res.data.data);
+    } else {
+      throw new Error(res.data.error || 'Profile completion failed');
     }
   };
 
