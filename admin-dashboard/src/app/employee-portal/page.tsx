@@ -33,6 +33,11 @@ interface Appointment {
     category: string;
   };
   status: string;
+  billing?: {
+    paymentStatus: string;
+    pendingAmount: number;
+    total: number;
+  };
 }
 
 export default function EmployeePortal() {
@@ -401,7 +406,7 @@ export default function EmployeePortal() {
                       Finish
                     </button>
                   )}
-                  {app.status === 'COMPLETED' && (
+                  {app.status === 'COMPLETED' && (!app.billing || app.billing.paymentStatus === 'PAID') && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                       <div style={{ color: '#34C759', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 900 }}>
                         <CheckCircle2 size={24} />
@@ -415,6 +420,27 @@ export default function EmployeePortal() {
                         padding: '3px 10px', 
                         borderRadius: '8px'
                       }}>Slot Available</span>
+                    </div>
+                  )}
+                  {app.status === 'COMPLETED' && app.billing && (app.billing.paymentStatus === 'PENDING' || app.billing.paymentStatus === 'PARTIAL' || app.billing.pendingAmount > 0) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ color: '#FF9500', fontWeight: 800, fontSize: '0.8rem', textAlign: 'right' }}>Pending: ₹{app.billing.pendingAmount}</span>
+                      <button 
+                        className={styles.pageBtn}
+                        onClick={() => openPaymentModal(app)}
+                        style={{ 
+                          padding: '10px 20px', 
+                          background: '#FF9500', 
+                          color: 'white',
+                          fontWeight: 800,
+                          borderRadius: '16px',
+                          gap: '8px',
+                          boxShadow: '0 8px 20px rgba(255, 149, 0, 0.2)'
+                        }}
+                      >
+                        <CreditCard size={16} />
+                        Collect Payment
+                      </button>
                     </div>
                   )}
                 </div>

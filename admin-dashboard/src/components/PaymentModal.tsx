@@ -18,11 +18,13 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
     paymentMethod: "CASH",
     amount: (appointment?.service?.price || 0).toString(),
     transactionId: "",
-    paymentVerified: false
+    paymentVerified: false,
+    splitCashAmount: "",
+    splitUpiAmount: ""
   });
   const [loading, setLoading] = useState(false);
 
-  const requiresVerification = formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD';
+  const requiresVerification = formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD' || formData.paymentMethod === 'SPLIT';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,14 +38,23 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
     setLoading(true);
 
     try {
+      const payload: any = {
+        paymentMethod: formData.paymentMethod,
+        amount: formData.amount,
+        transactionId: formData.transactionId,
+        paymentVerified: formData.paymentVerified
+      };
+
+      if (formData.paymentMethod === 'SPLIT') {
+        payload.splitDetails = {
+          cashAmount: Number(formData.splitCashAmount) || 0,
+          upiAmount: Number(formData.splitUpiAmount) || 0
+        };
+      }
+
       const res = await apiRequest(`/appointments/${appointment._id}/finish`, {
         method: 'POST',
-        body: {
-          paymentMethod: formData.paymentMethod,
-          amount: formData.amount,
-          transactionId: formData.transactionId,
-          paymentVerified: formData.paymentVerified
-        }
+        body: payload
       });
 
       if (res.success) {
@@ -92,8 +103,34 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
              <option value="UPI">UPI (GooglePay/PhonePe)</option>
              <option value="CARD">Debit/Credit Card</option>
              <option value="PREPAID">Prepaid/Balance</option>
+             <option value="SPLIT">Split (Cash + UPI)</option>
            </select>
         </div>
+
+        {formData.paymentMethod === 'SPLIT' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>Cash Amount (₹)</label>
+              <input 
+                required 
+                type="number"
+                className={styles.input} 
+                value={formData.splitCashAmount}
+                onChange={e => setFormData({...formData, splitCashAmount: e.target.value})}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>UPI Amount (₹)</label>
+              <input 
+                required 
+                type="number"
+                className={styles.input} 
+                value={formData.splitUpiAmount}
+                onChange={e => setFormData({...formData, splitUpiAmount: e.target.value})}
+              />
+            </div>
+          </div>
+        )}
 
         {/* UPI/Card Verification Section */}
         {requiresVerification && (
@@ -120,7 +157,7 @@ export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }
               </span>
             </div>
 
-            {formData.paymentMethod === 'UPI' && (
+            {(formData.paymentMethod === 'UPI' || formData.paymentMethod === 'SPLIT') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
                 <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>UPI Transaction ID / Ref No.</label>
                 <input 

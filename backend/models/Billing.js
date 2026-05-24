@@ -14,9 +14,14 @@ const BillingSchema = new mongoose.Schema({
   total: { type: Number, required: true },
   paymentMethod: { 
     type: String, 
-    enum: ['CASH', 'CARD', 'UPI', 'CREDIT'], 
+    enum: ['CASH', 'CARD', 'UPI', 'CREDIT', 'SPLIT'], 
     default: 'CASH' 
   },
+  splitDetails: {
+    cashAmount: { type: Number, default: 0 },
+    upiAmount: { type: Number, default: 0 }
+  },
+  pendingAmount: { type: Number, default: 0 },
   paymentStatus: { 
     type: String, 
     enum: ['PENDING', 'PAID', 'PARTIAL'], 

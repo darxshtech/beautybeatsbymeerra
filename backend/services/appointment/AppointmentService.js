@@ -95,6 +95,7 @@ class AppointmentService {
       .populate('customer', 'name phone')
       .populate('staff', 'name')
       .populate('service', 'name price duration')
+      .populate('billing', 'paymentStatus pendingAmount total splitDetails')
       .sort('-appointmentDate');
 
     return {

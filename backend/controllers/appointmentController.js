@@ -9,8 +9,12 @@ exports.getAvailability = async (req, res, next) => {
     const { date, staffId } = req.query;
     if (!date) return res.status(400).json({ success: false, message: 'Date is required' });
 
-    // Standard pool of slots for salon
-    const slots = ['09:00 AM', '10:30 AM', '12:00 PM', '02:00 PM', '03:30 PM', '05:00 PM'];
+    // Dynamic pool of slots for salon (10 AM to 7 PM)
+    const slots = [
+      '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+      '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
+      '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'
+    ];
     const availabilityList = [];
 
     const User = require('../models/User');
@@ -31,8 +35,12 @@ exports.getAvailability = async (req, res, next) => {
     }
 
     const now = new Date();
-    // Use simple date string comparison for today check (works in most environments)
-    const isToday = new Date(date).toDateString() === now.toDateString();
+    // Use IST for accurate time comparison
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const nowIST = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+    
+    const requestedDate = new Date(date);
+    const isToday = requestedDate.toDateString() === nowIST.toDateString();
 
     console.log(`Checking availability for ${date}. Today? ${isToday}. Total Staff: ${staffList.length}`);
 
@@ -41,7 +49,7 @@ exports.getAvailability = async (req, res, next) => {
     for (const slot of slots) {
       let available = false;
 
-      // 1. If it's today, filter out past slots
+      // 1. If it's today, filter out past slots based on IST
       if (isToday) {
         const [timePart, ampm] = slot.split(' ');
         const [hours, minutes] = timePart.split(':');
@@ -49,10 +57,10 @@ exports.getAvailability = async (req, res, next) => {
         if (ampm === 'PM' && h < 12) h += 12;
         if (ampm === 'AM' && h === 12) h = 0;
         
-        const slotTime = new Date(now);
-        slotTime.setHours(h, parseInt(minutes), 0, 0);
+        const slotTimeIST = new Date(nowIST);
+        slotTimeIST.setHours(h, parseInt(minutes), 0, 0);
         
-        if (slotTime < now) {
+        if (slotTimeIST < nowIST) {
           console.log(`Slot ${slot} is in the past. marking unavailable.`);
           availabilityList.push({ slot, available: false });
           continue;
@@ -253,14 +261,21 @@ exports.getStaffAppointments = async (req, res, next) => {
     const isSysAdmin = staffId === 'SYSTEM_ADMIN_ID';
     const orQuery = isSysAdmin ? [{ staff: null }] : [{ staff: staffId }, { staff: null }];
 
-    const appointments = await Appointment.find({
+    const appointmentsRaw = await Appointment.find({
       $or: orQuery,
-      status: { $in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'IN-PROGRESS'] }
+      status: { $in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'IN-PROGRESS', 'COMPLETED'] }
     })
       .populate('customer', 'name phone email skinToneInfo birthday anniversary visitCount lastVisit loyaltyPoints')
       .populate('service', 'name category duration price')
       .populate('staff', 'name')
+      .populate('billing', 'paymentStatus pendingAmount total splitDetails')
       .sort({ type: -1, createdAt: 1 }); // WALKIN (W) before ONLINE (O), then by creation time
+
+    const appointments = appointmentsRaw.filter(app => {
+      if (app.status !== 'COMPLETED') return true;
+      if (app.billing && (app.billing.paymentStatus === 'PENDING' || app.billing.paymentStatus === 'PARTIAL' || app.billing.pendingAmount > 0)) return true;
+      return false;
+    });
 
     res.status(200).json({ success: true, data: appointments });
   } catch (err) {
@@ -277,7 +292,7 @@ exports.finishService = async (req, res, next) => {
   try {
     const appointmentId = req.params.id;
     const employeeId = req.user._id || req.user.id;
-    const { paymentMethod, amount, transactionId } = req.body;
+    const { paymentMethod, amount, transactionId, splitDetails } = req.body;
 
     const appointment = await Appointment.findById(appointmentId)
       .populate('customer', 'name phone visitCount')
@@ -288,33 +303,75 @@ exports.finishService = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
+    const totalAmount = amount || appointment.service?.price || 0;
+    
+    let paidAmount = totalAmount;
+    let pendingAmount = 0;
+    let paymentStatus = 'PAID';
+
+    if (paymentMethod === 'SPLIT' && splitDetails) {
+      paidAmount = (Number(splitDetails.cashAmount) || 0) + (Number(splitDetails.upiAmount) || 0);
+      pendingAmount = Math.max(0, totalAmount - paidAmount);
+      if (pendingAmount > 0) {
+        paymentStatus = paidAmount > 0 ? 'PARTIAL' : 'PENDING';
+      }
+    } else {
+      // If regular payment but amount is less than total
+      // Assume amount provided is the paid amount if explicitly sent, else full price
+      if (req.body.amount !== undefined && Number(req.body.amount) < (appointment.service?.price || 0)) {
+        pendingAmount = Math.max(0, (appointment.service?.price || 0) - Number(req.body.amount));
+        paymentStatus = 'PARTIAL';
+      }
+    }
+
     // Create/update billing record
-    const billing = await Billing.create({
-      appointment: appointmentId,
-      customer: appointment.customer._id,
-      items: [{
-        name: appointment.service?.name || 'Service',
-        price: amount || appointment.service?.price || 0,
-        quantity: 1,
-        isService: true
-      }],
-      subtotal: amount || appointment.service?.price || 0,
-      total: amount || appointment.service?.price || 0,
-      paymentMethod: paymentMethod || 'CASH',
-      paymentStatus: 'PAID'
-    });
-
-    // Update appointment
-    appointment.status = 'COMPLETED';
-    appointment.billing = billing._id;
-    await appointment.save();
-
-    // Update customer visit count
-    if (appointment.customer) {
-      await User.findByIdAndUpdate(appointment.customer._id, {
-        $inc: { visitCount: 1 },
-        lastVisit: new Date()
+    let billing;
+    if (appointment.billing) {
+      // It's already billed, just update payment
+      billing = await Billing.findById(appointment.billing);
+      if (billing) {
+        billing.paymentMethod = paymentMethod || billing.paymentMethod;
+        if (paymentMethod === 'SPLIT' && splitDetails) {
+           billing.splitDetails = splitDetails;
+        }
+        billing.pendingAmount = pendingAmount;
+        billing.paymentStatus = paymentStatus;
+        await billing.save();
+      }
+    }
+    
+    if (!billing) {
+      billing = await Billing.create({
+        appointment: appointmentId,
+        customer: appointment.customer._id,
+        items: [{
+          name: appointment.service?.name || 'Service',
+          price: appointment.service?.price || 0,
+          quantity: 1,
+          isService: true
+        }],
+        subtotal: appointment.service?.price || 0,
+        total: appointment.service?.price || 0,
+        paymentMethod: paymentMethod || 'CASH',
+        splitDetails: paymentMethod === 'SPLIT' ? splitDetails : undefined,
+        pendingAmount: pendingAmount,
+        paymentStatus: paymentStatus
       });
+    }
+
+    // Update appointment status if not completed
+    if (appointment.status !== 'COMPLETED') {
+      appointment.status = 'COMPLETED';
+      appointment.billing = billing._id;
+      await appointment.save();
+
+      // Update customer visit count ONLY if newly completed
+      if (appointment.customer) {
+        await User.findByIdAndUpdate(appointment.customer._id, {
+          $inc: { visitCount: 1 },
+          lastVisit: new Date()
+        });
+      }
     }
 
     // Notify admin: service finished

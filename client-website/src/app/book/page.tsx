@@ -417,7 +417,7 @@ export default function BookingPage() {
 
                 {(() => {
                   const totalAmount = Math.max(0, (selectedService?.price || 0) - discount - (redeemPoints ? ((user?.loyaltyPoints || 0) * 10) : 0));
-                  const qrData = encodeURIComponent(`upi://pay?pa=beautybeats@ybl&pn=BeautyBeats&am=${totalAmount}&cu=INR`);
+                  const qrData = encodeURIComponent(`upi://pay?pa=beautybeats320-3@okaxis&pn=BeautyBeats&am=${totalAmount}&cu=INR`);
 
                   return (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -626,6 +626,10 @@ export default function BookingPage() {
                   <div className="flex justify-between text-sm font-bold">
                      <span className="text-gray-400">Amount</span>
                      <span className="text-gray-900 font-black">₹{selectedService?.price}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold">
+                     <span className="text-gray-400">Specialist</span>
+                     <span className="text-gray-900 font-black">{selectedStaff ? staff.find(s => s._id === selectedStaff)?.name : 'Any Specialist'}</span>
                   </div>
                </div>
 

@@ -175,15 +175,21 @@ export default function Appointments() {
              };
              const style = statusColors[val.status] || { bg: 'rgba(142, 142, 147, 0.1)', color: '#8E8E93' };
              return (
-              <span style={{ 
-                background: style.bg,
-                color: style.color,
-                padding: '4px 12px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 800,
-                textTransform: 'uppercase'
-              }}>{val.status}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ 
+                  background: style.bg,
+                  color: style.color,
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  width: 'fit-content'
+                }}>{val.status}</span>
+                {val.billing && (val.billing.paymentStatus === 'PENDING' || val.billing.paymentStatus === 'PARTIAL') && (
+                  <span style={{ color: '#FF9500', fontSize: '10px', fontWeight: 800 }}>Pmt: {val.billing.paymentStatus} (₹{val.billing.pendingAmount})</span>
+                )}
+              </div>
              );
           }},
           { key: 'actions', label: 'Actions', render: (val) => (
