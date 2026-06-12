@@ -46,12 +46,14 @@ export default function WelcomeModal() {
             <div className="flex flex-col md:grid md:grid-cols-5 md:h-[600px]">
                {/* Video Section - responsive height on mobile */}
                <div className="md:col-span-2 relative bg-black flex items-center justify-center overflow-hidden aspect-video md:aspect-auto">
-                  <iframe 
-                    className="absolute inset-0 w-full h-full"
-                    src="https://www.youtube.com/embed/6YaIHbbL4i0?autoplay=1&mute=1&controls=0&loop=1&playlist=6YaIHbbL4i0&rel=0"
+                  <video 
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src="/intro.mp4"
                     title="Introduction Video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
                   />
                </div>
                {/* Text Section - compact padding on mobile */}

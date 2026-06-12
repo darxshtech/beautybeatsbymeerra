@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, Clock, Play, Users, ChevronRight } from 'lucide-react';
 
@@ -12,13 +12,22 @@ const gallery = [
 ];
 
 const videoReviews = [
-  { id: 1, title: "Salon Tour", duration: "Premium Experience", url: "https://www.youtube.com/embed/Hf6abfL1la4" },
-  { id: 2, title: "Customer Story", duration: "Happy Transformation", url: "https://www.youtube.com/embed/TxGuR1dzYVQ" },
-  { id: 3, title: "Staff Magic", duration: "Expert Skills", url: "https://www.youtube.com/embed/BtSTipcFHAo" },
+  { id: 1, title: "Salon Tour", duration: "Premium Experience", url: "/intro.mp4" },
+  { id: 2, title: "Customer Story", duration: "Happy Transformation", url: "/intro.mp4" },
+  { id: 3, title: "Staff Magic", duration: "Expert Skills", url: "/intro.mp4" },
 ];
 
 function VideoCard({ v }: { v: typeof videoReviews[0] }) {
   const [isHovered, setIsHovered] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (isHovered) {
+      videoRef.current?.play().catch(() => {});
+    } else {
+      videoRef.current?.pause();
+    }
+  }, [isHovered]);
 
   return (
     <motion.div
@@ -29,11 +38,13 @@ function VideoCard({ v }: { v: typeof videoReviews[0] }) {
     >
        {/* Cropping Wrapper */}
        <div className="absolute inset-[-20%] w-[140%] h-[140%] pointer-events-none">
-          <iframe 
-            className={`w-full h-full transition-all duration-700 ${isHovered ? 'opacity-100' : 'opacity-40'}`}
-            src={`${v.url}?rel=0&controls=0&autoplay=${isHovered ? '1' : '0'}&mute=0&playlist=${v.url.split('/').pop()}&loop=1&showinfo=0&modestbranding=1&iv_load_policy=3&disablekb=1`}
-            title={v.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          <video 
+            ref={videoRef}
+            className={`w-full h-full object-cover transition-all duration-700 ${isHovered ? 'opacity-100' : 'opacity-40'}`}
+            src={v.url}
+            muted
+            loop
+            playsInline
           />
        </div>
        
