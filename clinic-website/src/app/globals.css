@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563EB; /* Clinical Blue */
+  --color-primary-light: #DBEAFE;
+  --color-primary-dark: #1E40AF;
+  --color-secondary: #FFFFFF;
+  --color-accent: #EFF6FF;
+  
+  --background: #FFFFFF;
+  --foreground: #111827;
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #111827;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.premium-shadow {
+    box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.1);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}

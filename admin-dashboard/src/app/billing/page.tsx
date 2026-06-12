@@ -94,7 +94,7 @@ export default function Billing() {
     if (!selectedCustomer) return;
     try {
       const token = localStorage.getItem('bb_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/billing/customer/${selectedCustomer._id}/pdf`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api'}/billing/customer/${selectedCustomer._id}/pdf`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

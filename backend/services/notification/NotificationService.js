@@ -145,43 +145,46 @@ class NotificationService {
       const eventName = metadata.eventType || 'Special Day';
 
       const { generateCouponInternal } = require('../../controllers/couponController');
-      const discount = templates['SPECIAL_EVENT']?.discountPercent || 20;
-      const coupon = await generateCouponInternal(metadata.userId, eventName, discount);
+      const discountVal = templates['SPECIAL_EVENT']?.discountPercent || 20;
+      const coupon = await generateCouponInternal(metadata.userId, eventName, discountVal);
 
-      const tpl = templates['SPECIAL_EVENT'];
-      if (tpl) {
-        message = tpl.messageBody
-          .replace(/\{\{name\}\}/g, user?.name || 'there')
-          .replace(/\{\{event\}\}/g, eventName)
-          .replace(/\{\{coupon\}\}/g, coupon.code)
-          .replace(/\{\{discount\}\}/g, discount.toString());
-      } else {
-        message = `Hello ${metadata.customerName || 'there'}! 🎉 Happy ${eventName}! Use code ${coupon.code} for ${discount}% off at BeautyBeats!`;
+      if (!coupon) {
+        console.warn('[AUTOMATION] No active coupon available for birth/anniversary trigger.');
+        return { success: false, reason: 'No coupon' };
       }
+      const discount = coupon.discountType === 'PERCENTAGE' ? coupon.discountValue : `₹${coupon.discountValue}`;
+      const brandName = metadata.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+      message = `Hello ${metadata.customerName || 'there'}! 🎉 Happy ${eventName}! Use code ${coupon.code} for ${discount}% off at ${brandName}!`;
     }
     else if (type === 'REMINDER') {
+      const brandName = metadata.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
       const tpl = templates['APPOINTMENT_REMINDER'];
       if (tpl) {
         message = tpl.messageBody
-          .replace(/\{\{name\}\}/g, metadata.customerName || '')
+          .replace(/\{\{name\}\}/g, metadata.customerName || 'there')
           .replace(/\{\{service\}\}/g, metadata.service || '')
-          .replace(/\{\{time\}\}/g, metadata.timeSlot || '');
+          .replace(/\{\{time\}\}/g, metadata.timeSlot || '')
+          .replace(/\{\{brandName\}\}/g, brandName);
       } else {
-        message = `Reminder: Your ${metadata.service} appointment is tomorrow at ${metadata.timeSlot} at BeautyBeats!`;
+        const brandName = metadata.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+        message = `Reminder: Your ${metadata.service} appointment is tomorrow at ${metadata.timeSlot} at ${brandName}!`;
       }
     }
     else if (type === 'FOLLOW_UP') {
-      message = `Hello! It's been a few weeks since your ${metadata.service} at BeautyBeats. Time for your follow-up session! Book your next appointment to ensure the best results. 💅`;
+      const brandName = metadata.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+      message = `Hello! It's been a few weeks since your ${metadata.service} at ${brandName}. Time for your follow-up session! Book your next appointment to ensure the best results. 💅`;
     }
     else if (type === 'REVIEW_REQUEST') {
+      const brandName = metadata.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
       const tpl = templates['REVIEW_REQUEST'];
       if (tpl) {
         message = tpl.messageBody
-          .replace(/\{\{name\}\}/g, metadata.customerName || '')
+          .replace(/\{\{name\}\}/g, metadata.customerName || 'there')
           .replace(/\{\{service\}\}/g, metadata.service || '')
-          .replace(/\{\{reviewLink\}\}/g, metadata.reviewLink || '');
+          .replace(/\{\{reviewLink\}\}/g, metadata.reviewLink || '')
+          .replace(/\{\{brandName\}\}/g, brandName);
       } else {
-        message = `Hi! Thank you for visiting BeautyBeats! Please leave a review: ${metadata.reviewLink}`;
+        message = `Hi! Thank you for visiting ${brandName}! Please leave a review: ${metadata.reviewLink}`;
       }
     }
 

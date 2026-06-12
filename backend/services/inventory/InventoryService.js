@@ -6,7 +6,7 @@ class InventoryService {
    * Get all inventory items with low-stock filtering
    */
   async getInventory(query) {
-    let queryStr = {};
+    let queryStr = { branch: query.branch || 'SALON' };
 
     // Filter low stock
     if (query.lowStock === 'true') {

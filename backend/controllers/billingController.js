@@ -9,7 +9,7 @@ const Billing = require('../models/Billing');
 exports.getBills = async (req, res, next) => {
   try {
     const { search, customer } = req.query;
-    let filter = {};
+    let filter = { branch: req.branch };
 
     if (customer) {
       filter.customer = customer;
@@ -120,9 +120,10 @@ exports.sendBillWhatsApp = async (req, res, next) => {
     }
 
     // Build a formatted bill message
+    const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
     const items = bill.items.map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
-      `🧾 *BeautyBeats Invoice*`,
+      `🧾 *${brandName} Invoice*`,
       ``,
       `Hi ${bill.customer?.name || 'Customer'},`,
       `Thank you for your visit! Here's your bill summary:`,
@@ -138,7 +139,7 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       `*Total Paid:* ₹${bill.total}`,
       `*Payment:* ${bill.paymentMethod}`,
       ``,
-      `⭐ Thank you for choosing BeautyBeats! See you soon.`,
+      `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
 
     // Generate WhatsApp URL
@@ -186,7 +187,8 @@ exports.generateCustomerHistoryPDF = async (req, res, next) => {
     doc.pipe(res);
 
     // Header
-    doc.fillColor('#FF3B30').fontSize(24).text('BEAUTYBEATS', { align: 'center', weight: 900 });
+    const brandName = req.branch === 'CLINIC' ? 'BEAUTYBEATS CLINIC' : 'BEAUTYBEATS';
+    doc.fillColor('#FF3B30').fontSize(24).text(brandName, { align: 'center', weight: 900 });
     doc.fillColor('#444444').fontSize(10).text('Premium Salon & Clinic Management', { align: 'center' }).moveDown(2);
 
     // Customer Info
@@ -240,7 +242,8 @@ exports.generateCustomerHistoryPDF = async (req, res, next) => {
     doc.fontSize(12).font('Helvetica-Bold').text(`Total Business Value: ₹${grandTotal}`, { align: 'right' });
 
     // Footer
-    doc.fontSize(8).font('Helvetica').fillColor('#888888').text('Thank you for being a loyal customer at BeautyBeats!', 50, doc.page.height - 50, { align: 'center' });
+    const brandFooterName = req.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+    doc.fontSize(8).font('Helvetica').fillColor('#888888').text(`Thank you for being a loyal customer at ${brandFooterName}!`, 50, doc.page.height - 50, { align: 'center' });
 
     doc.end();
   } catch (err) {

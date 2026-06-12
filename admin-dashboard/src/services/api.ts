@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api';
 
 /**
  * Enhanced fetch wrapper for API calls with Auth
@@ -6,9 +6,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 export async function apiRequest(endpoint: string, options: any = {}) {
   const { method = 'GET', body = null } = options;
   const token = typeof window !== 'undefined' ? localStorage.getItem('bb_token') : null;
+  const branch = typeof window !== 'undefined' ? localStorage.getItem('bb_admin_branch') || 'SALON' : 'SALON';
 
   const headers = {
     'Content-Type': 'application/json',
+    'x-branch': branch,
     ...(token && { 'Authorization': `Bearer ${token}` })
   };
 

@@ -28,6 +28,19 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [notifications, setNotifications] = useState<AdminNotif[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeBranch, setActiveBranch] = useState('SALON');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setActiveBranch(localStorage.getItem('bb_admin_branch') || 'SALON');
+    }
+  }, []);
+
+  const switchBranch = (branch: string) => {
+    localStorage.setItem('bb_admin_branch', branch);
+    setActiveBranch(branch);
+    window.location.reload();
+  };
   
   // Voice & Real-time State
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -241,6 +254,28 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
        </div>
 
        <div className={styles.rightNav}>
+          {/* Branch Switcher */}
+          {isAdmin && (
+            <div className="flex items-center gap-1 mr-2 bg-gray-100 p-1 rounded-lg">
+              <button 
+                onClick={() => switchBranch('SALON')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
+                  activeBranch === 'SALON' ? 'bg-white shadow text-red-600' : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                SALON
+              </button>
+              <button 
+                onClick={() => switchBranch('CLINIC')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
+                  activeBranch === 'CLINIC' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                CLINIC
+              </button>
+            </div>
+          )}
+
           {/* Voice Toggle Button */}
           <button 
             className={`${styles.navIcon} ${voiceEnabled ? styles.voiceActive : ''}`} 

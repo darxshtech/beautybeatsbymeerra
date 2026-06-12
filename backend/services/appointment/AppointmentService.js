@@ -56,7 +56,7 @@ class AppointmentService {
    * Get all appointments for calendar view (filtered by date)
    */
   async getAppointments(query) {
-    let queryObj = {};
+    let queryObj = { branch: query.branch || 'SALON' };
     
     // Formatting date query
     if (query.startDate && query.endDate) {
@@ -153,7 +153,8 @@ class AppointmentService {
       timeSlot,
       staff: data.staff,
       notes,
-      couponCode: data.couponCode || null
+      couponCode: data.couponCode || null,
+      branch: data.branch || 'SALON'
     });
 
     // --- Automated Billing Creation ---
@@ -208,7 +209,8 @@ class AppointmentService {
         discount: discount,
         total: total,
         paymentMethod: data.paymentMethod || 'UPI',
-        paymentStatus: data.paymentMethod === 'CASH' ? 'PENDING' : 'PAID'
+        paymentStatus: data.paymentMethod === 'CASH' ? 'PENDING' : 'PAID',
+        branch: data.branch || 'SALON'
       });
       appointment.billing = billing._id;
       await appointment.save();
@@ -238,7 +240,8 @@ class AppointmentService {
           if (!res.success) {
             console.warn('[WHATSAPP] Template failed, falling back to raw text:', res.error);
             // Fallback to raw text for existing sessions
-            const msg = `Hello ${user.name}! 🌟 Your appointment at BeautyBeats is confirmed for ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`;
+            const brandName = data.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+            const msg = `Hello ${user.name}! 🌟 Your appointment at ${brandName} is confirmed for ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`;
             WhatsappService.sendMessage(user.phone, msg);
           }
         })
@@ -289,6 +292,7 @@ class AppointmentService {
           phone: populatedApp.customer.phone,
           customerName: populatedApp.customer.name,
           service: populatedApp.service?.name || 'treatment',
+          branch: updated.branch || 'SALON',
           reviewLink
         }).catch(err => console.error('Review WhatsApp Error:', err));
       }

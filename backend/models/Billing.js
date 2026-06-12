@@ -28,6 +28,7 @@ const BillingSchema = new mongoose.Schema({
     default: 'PENDING' 
   },
   invoiceUrl: { type: String }, // Link to PDF bill
+  branch: { type: String, enum: ['SALON', 'CLINIC'], default: 'SALON' },
   createdAt: { type: Date, default: Date.now }
 });
 

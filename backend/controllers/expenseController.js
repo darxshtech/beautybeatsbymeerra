@@ -7,7 +7,8 @@ const ExpenseService = require('../services/expense/ExpenseService');
  */
 exports.getExpenses = async (req, res, next) => {
   try {
-    const response = await ExpenseService.getExpenses(req.query);
+    const query = { ...req.query, branch: req.branch };
+    const response = await ExpenseService.getExpenses(query);
     res.status(200).json(response);
   } catch (err) {
     next(err);
@@ -21,7 +22,8 @@ exports.getExpenses = async (req, res, next) => {
  */
 exports.addExpense = async (req, res, next) => {
   try {
-    const response = await ExpenseService.createExpense(req.body, req.user.id);
+    const data = { ...req.body, branch: req.branch };
+    const response = await ExpenseService.createExpense(data, req.user.id);
     res.status(201).json(response);
   } catch (err) {
     next(err);

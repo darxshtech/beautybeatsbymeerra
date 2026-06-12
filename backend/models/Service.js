@@ -12,6 +12,8 @@ const ServiceSchema = new mongoose.Schema({
   packageName: { type: String }, // Gold, Silver, Custom
   includedServices: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Service' }],
   
+  branch: { type: String, enum: ['SALON', 'CLINIC'], default: 'SALON' },
+  
   imageUrl: { type: String },
   followUpDays: { type: Number, default: 0 }, // 0 = no follow-up, e.g. Facial=14, Hair Treatment=21
   isActive: { type: Boolean, default: true },

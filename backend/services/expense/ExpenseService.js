@@ -6,7 +6,7 @@ class ExpenseService {
    * Get all expenses with filtering/sorting
    */
   async getExpenses(query) {
-    let queryStr = { ...query };
+    let queryStr = { ...query, branch: query.branch || 'SALON' };
 
     // Monthly filtering
     if (query.month) {

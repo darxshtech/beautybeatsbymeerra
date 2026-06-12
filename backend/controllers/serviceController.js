@@ -7,7 +7,8 @@ const MaintenanceService = require('../services/service/MaintenanceService');
  */
 exports.getServices = async (req, res, next) => {
   try {
-    const response = await MaintenanceService.getServices(req.query);
+    const query = { ...req.query, branch: req.branch };
+    const response = await MaintenanceService.getServices(query);
     res.status(200).json(response);
   } catch (err) {
     next(err);
@@ -21,7 +22,8 @@ exports.getServices = async (req, res, next) => {
  */
 exports.createService = async (req, res, next) => {
   try {
-    const response = await MaintenanceService.createService(req.body);
+    const data = { ...req.body, branch: req.branch };
+    const response = await MaintenanceService.createService(data);
     res.status(201).json(response);
   } catch (err) {
     next(err);

@@ -7,7 +7,8 @@ const InventoryService = require('../services/inventory/InventoryService');
  */
 exports.getInventory = async (req, res, next) => {
   try {
-    const response = await InventoryService.getInventory(req.query);
+    const query = { ...req.query, branch: req.branch };
+    const response = await InventoryService.getInventory(query);
     res.status(200).json(response);
   } catch (err) {
     next(err);
@@ -23,6 +24,7 @@ exports.addItem = async (req, res, next) => {
   try {
     const response = await InventoryService.addItem({
       ...req.body,
+      branch: req.branch,
       lastUpdatedBy: req.user.id
     });
     res.status(201).json(response);

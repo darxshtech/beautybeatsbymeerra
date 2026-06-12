@@ -18,6 +18,12 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Global Branch Middleware
+app.use((req, res, next) => {
+  req.branch = req.headers['x-branch'] || 'SALON';
+  next();
+});
+
 // Routes
 app.get('/', (req, res) => {
   res.send('Salon & Clinic Management API is running...');
@@ -44,22 +50,6 @@ app.use('/api/consent-forms', require('./routes/consentForms'));
 app.use('/api/admin-notifications', require('./routes/adminNotifications'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 
-// Seed default message templates on startup
-const MessageTemplate = require('./models/MessageTemplate');
-MessageTemplate.seedDefaults().catch(err => console.error('Template seed error:', err));
-
-// Start automatic notification scheduler (daily 9 AM IST)
-const NotificationScheduler = require('./services/notification/NotificationScheduler');
-NotificationScheduler.start();
-
-// Start automatic backup scheduler (weekly)
-const BackupScheduler = require('./services/backup/BackupScheduler');
-BackupScheduler.start();
-
-// Start KeepAwake service
-const KeepAwakeService = require('./services/server/KeepAwakeService');
-KeepAwakeService.start();
-
 // Catch-all for 404s
 app.use((req, res, next) => {
   const err = new Error(`Not Found - ${req.originalUrl}`);
@@ -73,6 +63,29 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+const startServer = async () => {
+  // Connect to database
+  await connectDB();
+
+  // Seed default message templates on startup
+  const MessageTemplate = require('./models/MessageTemplate');
+  MessageTemplate.seedDefaults().catch(err => console.error('Template seed error:', err));
+
+  // Start automatic notification scheduler (daily 9 AM IST)
+  const NotificationScheduler = require('./services/notification/NotificationScheduler');
+  NotificationScheduler.start();
+
+  // Start automatic backup scheduler (weekly)
+  const BackupScheduler = require('./services/backup/BackupScheduler');
+  BackupScheduler.start();
+
+  // Start KeepAwake service
+  const KeepAwakeService = require('./services/server/KeepAwakeService');
+  KeepAwakeService.start();
+
+  app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+};
+
+startServer();

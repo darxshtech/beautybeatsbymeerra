@@ -29,6 +29,7 @@ const AdminNotificationSchema = new mongoose.Schema({
     transactionId: { type: String }
   },
   
+  branch: { type: String, enum: ['SALON', 'CLINIC'], default: 'SALON' },
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });

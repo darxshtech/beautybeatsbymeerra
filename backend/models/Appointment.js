@@ -21,6 +21,7 @@ const AppointmentSchema = new mongoose.Schema({
   consultantNotes: { type: String }, // For skin tone details/suggestions
   
   billing: { type: mongoose.Schema.Types.ObjectId, ref: 'Billing' },
+  branch: { type: String, enum: ['SALON', 'CLINIC'], default: 'SALON' },
   
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

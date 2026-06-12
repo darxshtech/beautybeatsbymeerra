@@ -7,6 +7,7 @@ const InventorySchema = new mongoose.Schema({
   unit: { type: String, default: 'pcs' }, // pcs, ml, gram, etc.
   reorderLevel: { type: Number, default: 5 },
   lastUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  branch: { type: String, enum: ['SALON', 'CLINIC'], default: 'SALON' },
   updatedAt: { type: Date, default: Date.now }
 });
 

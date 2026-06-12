@@ -143,6 +143,7 @@ exports.createAppointment = async (req, res, next) => {
   try {
     const response = await AppointmentService.createAppointment({
       ...req.body,
+      branch: req.branch,
       customerId: req.body.customerId || (req.user ? req.user.id : null)
     });
     res.status(201).json(response);

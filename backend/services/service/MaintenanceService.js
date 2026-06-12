@@ -6,7 +6,7 @@ class MaintenanceService {
    * Get all services with dynamic pricing/category
    */
   async getServices(query) {
-    let queryObj = {};
+    let queryObj = { branch: query.branch || 'SALON' };
     if (query.search) {
       queryObj.name = { $regex: query.search, $options: 'i' };
     }
