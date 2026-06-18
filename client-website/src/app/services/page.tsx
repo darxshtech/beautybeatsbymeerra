@@ -6,15 +6,45 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import apiClient from '@/lib/api';
 
+const fallbackCategories = [
+  {
+    category: 'Hair',
+    img: '/images/hair.png',
+    items: [
+      { name: 'Haircut & Styling', price: 150, duration: '45m', desc: 'Precision cuts and blowouts tailored to your face shape.' },
+      { name: 'Hair Colouring', price: 500, duration: '90m', desc: 'Global, highlights, balayage and creative colour work.' },
+      { name: 'Keratin Treatment', price: 1200, duration: '120m', desc: 'Smooth, frizz-free hair for up to 6 months.' },
+    ]
+  },
+  {
+    category: 'Skin',
+    img: '/images/skin.png',
+    items: [
+      { name: 'Hydra Facial', price: 800, duration: '60m', desc: 'Deep cleansing, exfoliation and hydration for radiant skin.' },
+      { name: 'Chemical Peel', price: 600, duration: '45m', desc: 'Clinical-grade peels for pigmentation and acne scars.' },
+      { name: 'De-Tan Treatment', price: 350, duration: '30m', desc: 'Remove sun damage and restore your natural glow.' },
+    ]
+  },
+  {
+    category: 'Bridal',
+    img: '/images/bridal.png',
+    items: [
+      { name: 'Bridal Makeup', price: 3500, duration: '180m', desc: 'Premium HD/Airbrush makeup for your special day.' },
+      { name: 'Pre-Bridal Package', price: 5000, duration: '5 sessions', desc: 'Complete skin and hair prep starting 2 months before the wedding.' },
+      { name: 'Engagement Look', price: 2000, duration: '120m', desc: 'Elegant makeup and styling for your engagement ceremony.' },
+    ]
+  },
+];
+
 export default function ServicesPage() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>(fallbackCategories);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await apiClient.get('/services');
-        if (res.data.success) {
+        const res = await apiClient.get('/services?branch=SALON');
+        if (res.data.success && res.data.data?.length > 0) {
           // Group by category
           const grouped = res.data.data.reduce((acc: any, service: any) => {
             const cat = service.category || 'General';
@@ -24,8 +54,8 @@ export default function ServicesPage() {
           }, {});
           setCategories(Object.values(grouped));
         }
-      } catch (err) {
-        console.error('Fetch services error:', err);
+      } catch {
+        // Use fallback categories silently
       } finally {
         setLoading(false);
       }

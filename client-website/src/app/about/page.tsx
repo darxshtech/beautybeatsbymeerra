@@ -30,7 +30,7 @@ export default function AboutPage() {
              </div>
           </motion.div>
           <div className="aspect-[4/5] bg-gray-50 rounded-[60px] relative overflow-hidden shadow-2xl">
-             <img src="/images/hero.png" alt="About Hero" className="absolute inset-0 w-full h-full object-cover" />
+             <img src="/images/IMG_4146.png" alt="BeautyBeats Salon" className="absolute inset-0 w-full h-full object-cover" />
              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
           </div>
        </section>
@@ -74,8 +74,19 @@ export default function AboutPage() {
                 </button>
              </div>
              <div className="grid grid-cols-2 gap-6">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="aspect-square bg-white/5 rounded-[40px] border border-white/10" />
+                {[
+                  { name: 'Meera Mam', role: 'Founder & Lead Stylist', initials: 'MM' },
+                  { name: 'Anjali Sharma', role: 'Skin Specialist', initials: 'AS' },
+                  { name: 'Riya Kulkarni', role: 'Hair Colorist', initials: 'RK' },
+                  { name: 'Priya Patil', role: 'Bridal Expert', initials: 'PP' },
+                ].map((member) => (
+                  <div key={member.name} className="aspect-square bg-white/5 rounded-[40px] border border-white/10 flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-all">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white text-xl font-black shadow-lg">
+                      {member.initials}
+                    </div>
+                    <h4 className="font-black text-sm">{member.name}</h4>
+                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{member.role}</p>
+                  </div>
                 ))}
              </div>
           </div>

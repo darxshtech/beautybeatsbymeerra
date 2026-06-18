@@ -39,3 +39,10 @@ body {
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+
+/* Invert calendar picker indicator in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) !important;
+    cursor: pointer;
+}

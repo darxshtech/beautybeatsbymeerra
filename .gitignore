@@ -3,6 +3,7 @@ node_modules/
 out/
 build/
 .env*
+env.local
 .DS_Store
 *.pem
 demo.mp4

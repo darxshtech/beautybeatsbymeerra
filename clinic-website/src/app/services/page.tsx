@@ -13,7 +13,7 @@ export default function ServicesPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await apiClient.get('/services');
+        const res = await apiClient.get('/services?branch=CLINIC');
         if (res.data.success) {
           // Group by category
           const grouped = res.data.data.reduce((acc: any, service: any) => {

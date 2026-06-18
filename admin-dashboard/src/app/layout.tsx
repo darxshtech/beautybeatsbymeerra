@@ -30,6 +30,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     setMobileSidebarOpen(false);
   }, [pathname]);
 
+  // Set branch theme attribute
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const branch = localStorage.getItem('bb_admin_branch') || 'SALON';
+      document.documentElement.setAttribute('data-branch', branch);
+    }
+  }, []);
+
   const isLoginPage = pathname === '/login';
   const showSidebar = isAuthenticated && !isLoginPage;
 

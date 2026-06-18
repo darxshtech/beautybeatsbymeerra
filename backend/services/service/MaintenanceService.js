@@ -6,7 +6,11 @@ class MaintenanceService {
    * Get all services with dynamic pricing/category
    */
   async getServices(query) {
-    let queryObj = { branch: query.branch || 'SALON' };
+    let queryObj = {};
+    // Only filter by branch if explicitly provided (e.g. from public client/clinic website)
+    if (query.branch) {
+      queryObj.branch = query.branch;
+    }
     if (query.search) {
       queryObj.name = { $regex: query.search, $options: 'i' };
     }

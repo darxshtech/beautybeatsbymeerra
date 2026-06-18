@@ -92,7 +92,7 @@ export default function POSPage() {
         </div>
         <div style={{ 
           padding: '8px 20px', 
-          background: 'rgba(255, 59, 48, 0.08)', 
+          background: 'var(--primary-light)', 
           borderRadius: '12px', 
           display: 'flex', 
           alignItems: 'center', 
@@ -135,7 +135,7 @@ export default function POSPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
               <div style={{ 
                 width: '36px', height: '36px', borderRadius: '10px', 
-                background: 'rgba(255, 59, 48, 0.08)', color: 'var(--primary)',
+                background: 'var(--primary-light)', color: 'var(--primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center' 
               }}>
                 <Search size={18} />
@@ -222,7 +222,7 @@ export default function POSPage() {
                 {!customer.isNew && (
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ 
-                      background: 'rgba(255, 59, 48, 0.08)', padding: '12px 20px', 
+                      background: 'var(--primary-light)', padding: '12px 20px', 
                       borderRadius: '16px', display: 'inline-block' 
                     }}>
                       <p style={{ fontSize: '9px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Loyalty Balance</p>
@@ -259,7 +259,7 @@ export default function POSPage() {
                   style={{ 
                     padding: '1.25rem', borderRadius: '16px', textAlign: 'left',
                     border: selectedService?._id === s._id ? '2px solid var(--primary)' : '2px solid transparent',
-                    background: selectedService?._id === s._id ? 'rgba(255, 59, 48, 0.04)' : 'var(--bg-main)',
+                    background: selectedService?._id === s._id ? 'rgba(var(--primary-rgb), 0.04)' : 'var(--bg-main)',
                     cursor: 'pointer', transition: 'all 0.2s ease',
                     position: 'relative', overflow: 'hidden'
                   }}
@@ -297,8 +297,8 @@ export default function POSPage() {
         <div className="mobile-no-sticky" style={{ position: 'sticky', top: '2rem' }}>
           <div style={{ 
             background: 'white', borderRadius: '24px', padding: '2rem',
-            border: '2px solid rgba(255, 59, 48, 0.12)', 
-            boxShadow: '0 20px 60px rgba(255, 59, 48, 0.08)'
+            border: '2px solid rgba(var(--primary-rgb), 0.12)', 
+            boxShadow: '0 20px 60px var(--primary-light)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
               <Gift size={20} color="var(--primary)" />
@@ -336,7 +336,7 @@ export default function POSPage() {
                 onClick={() => setRedeemPoints(!redeemPoints)}
                 style={{ 
                   padding: '1rem', borderRadius: '14px', cursor: 'pointer',
-                  background: redeemPoints ? 'rgba(255, 59, 48, 0.06)' : 'var(--bg-main)',
+                  background: redeemPoints ? 'rgba(var(--primary-rgb), 0.06)' : 'var(--bg-main)',
                   border: redeemPoints ? '2px solid var(--primary)' : '2px solid transparent',
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   marginBottom: '1.5rem', transition: 'all 0.2s'

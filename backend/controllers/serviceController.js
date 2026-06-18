@@ -7,7 +7,9 @@ const MaintenanceService = require('../services/service/MaintenanceService');
  */
 exports.getServices = async (req, res, next) => {
   try {
-    const query = { ...req.query, branch: req.branch };
+    // Do not inject req.branch so admin can see services from all branches.
+    // Public client/clinic websites should pass ?branch=SALON or ?branch=CLINIC explicitly.
+    const query = { ...req.query };
     const response = await MaintenanceService.getServices(query);
     res.status(200).json(response);
   } catch (err) {
@@ -22,7 +24,11 @@ exports.getServices = async (req, res, next) => {
  */
 exports.createService = async (req, res, next) => {
   try {
-    const data = { ...req.body, branch: req.branch };
+    const data = { ...req.body };
+    // Only apply branch from header if branch isn't specified in the body
+    if (!data.branch) {
+      data.branch = req.branch;
+    }
     const response = await MaintenanceService.createService(data);
     res.status(201).json(response);
   } catch (err) {
@@ -40,6 +46,40 @@ exports.createPackage = async (req, res, next) => {
     const { name, serviceIds, totalPrice, description } = req.body;
     const response = await MaintenanceService.createPackage(name, serviceIds, totalPrice, description);
     res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @desc    Update a service
+ * @route   PUT /api/services/:id
+ * @access  Private/Admin
+ */
+exports.updateService = async (req, res, next) => {
+  try {
+    const service = await require('../models/Service').findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!service) return res.status(404).json({ success: false, error: 'Service not found' });
+    res.status(200).json({ success: true, data: service });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @desc    Delete a service
+ * @route   DELETE /api/services/:id
+ * @access  Private/Admin
+ */
+exports.deleteService = async (req, res, next) => {
+  try {
+    const service = await require('../models/Service').findByIdAndDelete(req.params.id);
+    if (!service) return res.status(404).json({ success: false, error: 'Service not found' });
+    res.status(200).json({ success: true, data: {} });
   } catch (err) {
     next(err);
   }

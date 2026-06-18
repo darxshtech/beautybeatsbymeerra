@@ -8,6 +8,8 @@ const serviceValidator = {
       category: Joi.string().required(),
       duration: Joi.number().min(5).required(),
       price: Joi.number().min(0).required(),
+      branch: Joi.string().valid('SALON', 'CLINIC').default('SALON'),
+      followUpDays: Joi.number().min(0).default(0),
       isActive: Joi.boolean().default(true)
     });
     return schema.validate(data);

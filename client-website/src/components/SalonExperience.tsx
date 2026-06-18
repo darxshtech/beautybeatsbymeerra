@@ -12,9 +12,11 @@ const gallery = [
 ];
 
 const videoReviews = [
-  { id: 1, title: "Salon Tour", duration: "Premium Experience", url: "/intro.mp4" },
-  { id: 2, title: "Customer Story", duration: "Happy Transformation", url: "/intro.mp4" },
-  { id: 3, title: "Staff Magic", duration: "Expert Skills", url: "/intro.mp4" },
+  { id: 1, title: "Bridal Makeover", duration: "Premium Experience", url: "/images/IMG_5453.MOV" },
+  { id: 2, title: "Hair Styling", duration: "Expert Artistry", url: "/images/IMG_5456.MOV" },
+  { id: 3, title: "Nail & Lash Glamour", duration: "Signature Touch", url: "/images/IMG_5464.MOV" },
+  { id: 4, title: "Advanced Skin Care", duration: "Clinical Results", url: "/images/IMG_5471.MOV" },
+  { id: 5, title: "Hair Highlights", duration: "Trending Looks", url: "/images/IMG_5476.MOV" },
 ];
 
 function VideoCard({ v }: { v: typeof videoReviews[0] }) {
@@ -140,8 +142,10 @@ export default function SalonExperience() {
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {videoReviews.map((v) => (
-                  <VideoCard key={v.id} v={v} />
+                {videoReviews.map((v, idx) => (
+                  <div key={v.id} className={idx === 0 ? 'lg:col-span-2' : ''}>
+                    <VideoCard v={v} />
+                  </div>
                 ))}
              </div>
           </div>
@@ -149,6 +153,3 @@ export default function SalonExperience() {
     </div>
   );
 }
-
-
-

@@ -13,21 +13,51 @@ const getIcon = (code: string) => {
   return Sparkles;
 };
 
+const fallbackPlans = [
+  {
+    name: 'Silver Glow',
+    code: 'SILVER',
+    price: '₹499',
+    interval: 'month',
+    popular: false,
+    color: 'from-gray-400 to-gray-600',
+    features: ['10% off all services', 'Priority booking', 'Birthday special discount', 'Free consultation'],
+  },
+  {
+    name: 'Gold Radiance',
+    code: 'PREMIUM',
+    price: '₹999',
+    interval: 'month',
+    popular: true,
+    color: 'from-amber-500 to-orange-600',
+    features: ['20% off all services', 'Free monthly facial', 'Priority booking', 'Loyalty points 2x', 'Free hair spa quarterly'],
+  },
+  {
+    name: 'Platinum Elite',
+    code: 'VIP',
+    price: '₹1,999',
+    interval: 'month',
+    popular: false,
+    color: 'from-violet-500 to-purple-700',
+    features: ['30% off all services', 'Free monthly facial + hair spa', 'VIP lounge access', 'Loyalty points 3x', 'Personal stylist assigned', 'Exclusive event invites'],
+  },
+];
+
 export default function SubscriptionsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>(fallbackPlans);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const res = await apiClient.get('/subscriptions');
-        if (res.data.success) {
+        if (res.data.success && res.data.data?.length > 0) {
           setPlans(res.data.data);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // Use fallback plans silently
       } finally {
         setLoading(false);
       }

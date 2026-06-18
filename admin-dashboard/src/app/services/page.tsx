@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Scissors, Plus, Settings, TrendingUp, Filter, Search, Trash2 } from 'lucide-react';
+import { Scissors, Plus, Settings, TrendingUp, Filter, Search, Trash2, Edit3 } from 'lucide-react';
 import styles from '@/styles/layout/Dashboard.module.css';
 import cardStyles from '@/styles/components/Card.module.css';
 import Table from '@/components/Table';
@@ -11,13 +11,16 @@ import { apiRequest } from '@/services/api';
 export default function Services() {
   const [services, setServices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     category: 'Haircut',
     price: '',
     duration: '',
     description: '',
-    followUpDays: 0
+    followUpDays: 0,
+    branch: 'SALON',
+    isActive: true
   });
 
   const [search, setSearch] = useState("");
@@ -45,16 +48,47 @@ export default function Services() {
     }
   };
 
+  const handleOpenModal = (service: any = null) => {
+    if (service) {
+      setEditingService(service);
+      setFormData({
+        name: service.name || '',
+        description: service.description || '',
+        category: service.category || 'Haircut',
+        duration: service.duration || '',
+        price: service.price || '',
+        branch: service.branch || 'SALON',
+        followUpDays: service.followUpDays || 0,
+        isActive: service.isActive !== undefined ? service.isActive : true
+      });
+    } else {
+      setEditingService(null);
+      setFormData({
+        name: '',
+        category: 'Haircut',
+        price: '',
+        duration: '',
+        description: '',
+        followUpDays: 0,
+        branch: 'SALON',
+        isActive: true
+      });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await apiRequest('/services', {
-        method: 'POST',
-        body: formData
+      const endpoint = editingService ? `/services/${editingService._id}` : '/services';
+      const method = editingService ? 'PUT' : 'POST';
+      const submitData = { ...formData, price: Number(formData.price), duration: Number(formData.duration) };
+      const res = await apiRequest(endpoint, {
+        method,
+        body: submitData
       });
       if (res.success) {
         setIsModalOpen(false);
-        setFormData({ name: '', category: 'Haircut', price: '', duration: '', description: '', followUpDays: 0 });
         fetchServices();
       }
     } catch (err) {
@@ -67,11 +101,11 @@ export default function Services() {
       <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
            <h2 className={styles.title}>Service Repository</h2>
-           <p className={styles.subtitle}>Configure your salon's service menu, dynamic pricing, and bundled packages.</p>
+           <p className={styles.subtitle}>Configure your salon & clinic service menu, dynamic pricing, and bundled packages.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
            <button 
-             onClick={() => setIsModalOpen(true)}
+             onClick={() => handleOpenModal()}
              style={{ 
                background: 'var(--primary)', 
                color: 'white', 
@@ -129,6 +163,18 @@ export default function Services() {
           { key: 'price', label: 'Commercial Value', render: (val) => (
              <span style={{ fontWeight: 900, fontSize: '1.25rem' }}>₹{val.price}</span>
           )},
+          { key: 'branch', label: 'Branch', render: (val) => (
+             <span style={{ 
+               background: val.branch === 'SALON' ? 'rgba(255, 59, 48, 0.1)' : 'rgba(0, 122, 255, 0.1)', 
+               color: val.branch === 'SALON' ? 'var(--primary)' : '#007AFF', 
+               padding: '4px 12px', 
+               borderRadius: '12px', 
+               fontSize: '12px', 
+               fontWeight: 800 
+             }}>
+               {val.branch}
+             </span>
+          )},
           { key: 'isActive', label: 'Market Availability', render: (val) => (
              <span style={{ 
                background: val.isActive ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 149, 0, 0.1)',
@@ -142,8 +188,13 @@ export default function Services() {
           )},
           { key: 'actions', label: 'Configuration', render: (val) => (
              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className={styles.pageBtn} style={{ padding: '6px' }} title="Modify Pricing">
-                   <Settings size={18} />
+                <button 
+                  className={styles.pageBtn} 
+                  style={{ padding: '6px' }} 
+                  title="Modify Pricing"
+                  onClick={() => handleOpenModal(val)}
+                >
+                   <Edit3 size={18} />
                 </button>
                 <button 
                   className={styles.pageBtn} 
@@ -159,7 +210,7 @@ export default function Services() {
         data={services}
       />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Catalog New Service">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingService ? 'Edit Service' : 'Catalog New Service'}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Service Name</label>
@@ -193,22 +244,38 @@ export default function Services() {
               />
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Category</label>
-            <select 
-              className={styles.input}
-              value={formData.category}
-              onChange={e => setFormData({...formData, category: e.target.value})}
-            >
-              <option value="Haircut">Haircut</option>
-              <option value="Hair Color">Hair Color</option>
-              <option value="Facial">Facial</option>
-              <option value="Massage">Massage</option>
-              <option value="Pedicure">Pedicure</option>
-              <option value="Manicure">Manicure</option>
-              <option value="Package">Package</option>
-            </select>
+          
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Category</label>
+              <select 
+                className={styles.input}
+                value={formData.category}
+                onChange={e => setFormData({...formData, category: e.target.value})}
+              >
+                <option value="Haircut">Haircut</option>
+                <option value="Hair Color">Hair Color</option>
+                <option value="Facial">Facial</option>
+                <option value="Massage">Massage</option>
+                <option value="Pedicure">Pedicure</option>
+                <option value="Manicure">Manicure</option>
+                <option value="Skin">Skin</option>
+                <option value="Package">Package</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Branch</label>
+              <select
+                className={styles.input}
+                value={formData.branch}
+                onChange={e => setFormData({...formData, branch: e.target.value})}
+              >
+                <option value="SALON">Salon</option>
+                <option value="CLINIC">Clinic</option>
+              </select>
+            </div>
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Description</label>
             <textarea 
@@ -218,18 +285,17 @@ export default function Services() {
               onChange={e => setFormData({...formData, description: e.target.value})}
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Follow-Up Gap (days)</label>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input 
-              type="number"
-              className={styles.input}
-              value={formData.followUpDays}
-              onChange={e => setFormData({...formData, followUpDays: parseInt(e.target.value) || 0})}
-              placeholder="0 = No follow-up, e.g. 14 for Facial"
-              min={0}
+              type="checkbox"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={e => setFormData({...formData, isActive: e.target.checked})}
             />
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Set to 0 for no follow-up. System auto-sends reminder this many days after treatment completion.</p>
+            <label htmlFor="isActive" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Service is Active</label>
           </div>
+
           <button 
             type="submit"
             style={{ 
@@ -243,7 +309,7 @@ export default function Services() {
               cursor: 'pointer'
             }}
           >
-            Catalog Service
+            {editingService ? 'Update Service' : 'Catalog Service'}
           </button>
         </form>
       </Modal>

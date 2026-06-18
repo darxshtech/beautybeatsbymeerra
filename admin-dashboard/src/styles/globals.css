@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #FF3B30;
-  --color-primary-light: #FEE2E2;
-  --color-primary-dark: #D70015;
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
   --color-secondary: #FFFFFF;
   --color-accent: #F9FAFB;
   --color-muted: #86868B;
@@ -16,6 +16,8 @@
   /* Core Variables for CSS Modules & Components */
   --primary: #FF3B30;
   --primary-dark: #D70015;
+  --primary-light: rgba(255, 59, 48, 0.08);
+  --primary-rgb: 255, 59, 48;
   --bg-main: #FBFBFD;
   --bg-sidebar: #FFFFFF;
   --text-main: #1D1D1F;
@@ -28,6 +30,16 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --radius-lg: 24px;
   --radius-md: 16px;
+}
+
+:root[data-branch='CLINIC'] {
+  --primary: #007AFF; /* Clinical premium blue */
+  --primary-dark: #0056B3;
+  --primary-light: rgba(0, 122, 255, 0.08);
+  --primary-rgb: 0, 122, 255;
+  --color-primary: #007AFF;
+  --color-primary-light: #E0F2FE;
+  --color-primary-dark: #0056B3;
 }
 
 [data-theme='dark'] {
@@ -83,7 +95,7 @@ ul {
 }
 
 .text-gradient {
-    background: linear-gradient(135deg, #FF3B30 0%, #D70015 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -117,4 +129,11 @@ ul {
     max-width: 1400px !important;
     margin: 0 auto !important;
   }
+}
+
+/* Invert calendar picker indicator in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) !important;
+    cursor: pointer;
 }

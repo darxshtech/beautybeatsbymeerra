@@ -93,7 +93,7 @@
   gap: 1rem;
   padding: 0.875rem 1rem;
   border-radius: var(--radius-md);
-  background: rgba(255, 59, 48, 0.08);
+  background: var(--primary-light);
   color: var(--primary);
   font-weight: 700;
   font-size: 0.9375rem;

@@ -20,20 +20,22 @@ import BeforeAfter from '@/components/BeforeAfter';
 import WelcomeModal from '@/components/WelcomeModal';
 import CustomerReviews from '@/components/CustomerReviews';
 import SalonExperience from '@/components/SalonExperience';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api';
 
 const slides = [
   {
     title: "Redefine Your",
     highlight: "Natural Glow",
     desc: "BeautyBeats combines advanced clinic technology with premium salon artistry to create a transformation you can feel.",
-    img: "/images/hero.png"
+    video: "/intro.mp4"
   },
   {
     title: "Elegance in Every",
     highlight: "Bridal Stroke",
     desc: "Unleash your inner goddess with our premium bridal packages tailored for your special day.",
-    img: "/images/bridal.png"
+    img: "/images/IMG_4146.png"
   },
   {
     title: "Revolutionary",
@@ -43,24 +45,25 @@ const slides = [
   }
 ];
 
-const services = [
-  { name: 'Hair Transformation', price: '₹45+', icon: Scissors, desc: 'Expert cuts and coloring tailored to your style.' },
-  { name: 'Skin Rejuvenation', price: '₹120+', icon: Sparkles, desc: 'Advanced facials and clinical skin treatments.' },
-  { name: 'Bridal Artistry', price: '₹350+', icon: Award, desc: 'Make your special day more beautiful with us.' },
+const fallbackServices = [
+  { name: 'Hair Transformation', price: 45, category: 'Hair', description: 'Expert cuts, colouring and styling tailored to your unique look.' },
+  { name: 'Skin Rejuvenation', price: 120, category: 'Skin', description: 'Advanced facials and clinical-grade skin treatments.' },
+  { name: 'Bridal Artistry', price: 350, category: 'Bridal', description: 'Make your special day unforgettable with our premium bridal packages.' },
 ];
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>(fallbackServices);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:5000/api/services?limit=3');
+        const res = await fetch(`${API_URL}/services?limit=3`);
         const json = await res.json();
-        if (json.success) setServices(json.data);
+        if (json.success && json.data?.length > 0) setServices(json.data);
       } catch (err) {
-        console.error(err);
+        // Use fallback services silently
       }
     };
     fetchServices();
@@ -112,7 +115,7 @@ export default function HomePage() {
                <div className="flex -space-x-3">
                  {[1,2,3,4].map(i => (
                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src={`/images/hero.png`} className="w-full h-full object-cover" />
+                      <img src="/images/IMG_4146.png" className="w-full h-full object-cover" />
                    </div>
                  ))}
                </div>
@@ -130,7 +133,19 @@ export default function HomePage() {
             className="relative"
           >
             <div className="aspect-square bg-slate-100 rounded-[60px] relative overflow-hidden shadow-2xl premium-shadow">
-               <img src={slides[currentSlide].img} alt="Salon Hero" className="absolute inset-0 w-full h-full object-cover" />
+               {slides[currentSlide].video ? (
+                 <video
+                   ref={heroVideoRef}
+                   src={slides[currentSlide].video}
+                   autoPlay
+                   muted
+                   loop
+                   playsInline
+                   className="absolute inset-0 w-full h-full object-cover"
+                 />
+               ) : (
+                 <img src={slides[currentSlide].img} alt="Salon Hero" className="absolute inset-0 w-full h-full object-cover" />
+               )}
                <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 to-transparent" />
             </div>
             {/* Float Card */}

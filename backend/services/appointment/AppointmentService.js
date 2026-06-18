@@ -257,6 +257,12 @@ class AppointmentService {
       }
     }
 
+    // Notify Admin
+    if (process.env.ADMIN_PHONE) {
+      const adminMsg = `🚨 New Appointment Alert! 📅\nCustomer: ${user?.name || 'Guest'} (${user?.phone || 'No phone'})\nService: ${selectedService?.name || 'Service'}\nDate: ${new Date(appointmentDate).toLocaleDateString()}\nTime: ${timeSlot}\nBranch: ${data.branch || 'SALON'}`;
+      WhatsappService.sendMessage(process.env.ADMIN_PHONE, adminMsg).catch(err => console.error('Admin Booking Notification Error:', err));
+    }
+
     // Increment visit count for user asynchronously
     User.findByIdAndUpdate(finalCustomerId, {
       $inc: { visitCount: 1 },
@@ -295,6 +301,13 @@ class AppointmentService {
           branch: updated.branch || 'SALON',
           reviewLink
         }).catch(err => console.error('Review WhatsApp Error:', err));
+      }
+
+      // Notify Admin that appointment is completed
+      if (process.env.ADMIN_PHONE) {
+        const WhatsappService = require('../notification/WhatsappService');
+        const adminMsg = `✅ Appointment Completed!\nCustomer: ${populatedApp?.customer?.name || 'Guest'} (${populatedApp?.customer?.phone || 'No phone'})\nService: ${populatedApp?.service?.name || 'treatment'}\nBranch: ${updated.branch || 'SALON'}`;
+        WhatsappService.sendMessage(process.env.ADMIN_PHONE, adminMsg).catch(err => console.error('Admin Completion Notification Error:', err));
       }
     }
 

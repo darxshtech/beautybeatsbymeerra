@@ -57,7 +57,7 @@ export default function BookingPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await apiClient.get('/services');
+        const res = await apiClient.get('/services?branch=CLINIC');
         if (res.data.success) setServices(res.data.data);
       } catch (err) {
         console.error(err);
