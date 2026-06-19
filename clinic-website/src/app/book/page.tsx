@@ -31,6 +31,7 @@ export default function BookingPage() {
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [categories, setCategories] = useState<any[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<string>("");
   const [step, setStep] = useState(0);
@@ -66,6 +67,14 @@ export default function BookingPage() {
         setLoadingServices(false);
       }
     };
+    const fetchCategories = async () => {
+      try {
+        const res = await apiClient.get('/categories');
+        if (res.data.success) setCategories(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
     const fetchStaff = async () => {
       try {
         const res = await apiClient.get('/users/staff');
@@ -75,6 +84,7 @@ export default function BookingPage() {
       }
     };
     fetchServices();
+    fetchCategories();
     fetchStaff();
   }, []);
 
@@ -180,22 +190,25 @@ export default function BookingPage() {
                  <p className="text-gray-500">Choose from our signature range of services.</p>
               </div>
               {(() => {
-                const categories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+                const displayCategories = categories.length > 0
+                  ? categories.map(c => c.name)
+                  : Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+
                 const filteredServices = activeCategory === "All"
                   ? services
-                  : services.filter(s => s.category === activeCategory);
+                  : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase());
 
                 return (
                   <>
                     <div className="flex flex-wrap gap-2 justify-center mb-8">
-                      {["All", ...categories].map(cat => (
+                      {["All", ...displayCategories].map(cat => (
                         <button
                           key={cat}
                           type="button"
                           onClick={() => setActiveCategory(cat)}
                           className={cn(
                             "px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border",
-                            activeCategory === cat 
+                            activeCategory?.toLowerCase() === cat?.toLowerCase()
                               ? "bg-primary text-white border-primary shadow-lg shadow-red-100" 
                               : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
                           )}

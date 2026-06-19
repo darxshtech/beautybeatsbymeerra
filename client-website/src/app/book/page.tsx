@@ -46,6 +46,8 @@ export default function BookingPage() {
   const [services, setServices] = useState<any[]>(fallbackBookingServices);
   const [loadingServices, setLoadingServices] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isUsingFallback, setIsUsingFallback] = useState(true);
   const [staff, setStaff] = useState<any[]>(fallbackStaff);
   const [selectedStaff, setSelectedStaff] = useState<string>("");
   const [step, setStep] = useState(0);
@@ -74,11 +76,24 @@ export default function BookingPage() {
     const fetchServices = async () => {
       try {
         const res = await apiClient.get('/services?branch=SALON');
-        if (res.data.success && res.data.data?.length > 0) setServices(res.data.data);
+        if (res.data.success && res.data.data?.length > 0) {
+          setServices(res.data.data);
+          setIsUsingFallback(false);
+        }
       } catch {
         // Use fallback services silently
       } finally {
         setLoadingServices(false);
+      }
+    };
+    const fetchCategories = async () => {
+      try {
+        const res = await apiClient.get('/categories');
+        if (res.data.success && res.data.data?.length > 0) {
+          setCategories(res.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
       }
     };
     const fetchStaff = async () => {
@@ -90,6 +105,7 @@ export default function BookingPage() {
       }
     };
     fetchServices();
+    fetchCategories();
     fetchStaff();
   }, []);
 
@@ -195,22 +211,25 @@ export default function BookingPage() {
                  <p className="text-gray-500">Choose from our signature range of services.</p>
               </div>
               {(() => {
-                const categories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+                const displayCategories = isUsingFallback
+                  ? Array.from(new Set(services.map(s => s.category).filter(Boolean)))
+                  : categories.map(c => c.name);
+
                 const filteredServices = activeCategory === "All"
                   ? services
-                  : services.filter(s => s.category === activeCategory);
+                  : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase());
 
                 return (
                   <>
                     <div className="flex flex-wrap gap-2 justify-center mb-8">
-                      {["All", ...categories].map(cat => (
+                      {["All", ...displayCategories].map(cat => (
                         <button
                           key={cat}
                           type="button"
                           onClick={() => setActiveCategory(cat)}
                           className={cn(
                             "px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border",
-                            activeCategory === cat 
+                            activeCategory?.toLowerCase() === cat?.toLowerCase()
                               ? "bg-primary text-white border-primary shadow-lg shadow-red-100" 
                               : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
                           )}
