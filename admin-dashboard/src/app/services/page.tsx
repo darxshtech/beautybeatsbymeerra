@@ -12,9 +12,14 @@ export default function Services() {
   const [services, setServices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAddingInlineCategory, setIsAddingInlineCategory] = useState(false);
+  const [inlineCategoryName, setInlineCategoryName] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Hair treatment',
+    category: '',
     price: '',
     duration: '',
     description: '',
@@ -34,6 +39,19 @@ export default function Services() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const json = await apiRequest('/categories');
+      if (json.success) setCategories(json.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     fetchServices();
   }, [search]);
@@ -49,12 +67,14 @@ export default function Services() {
   };
 
   const handleOpenModal = (service: any = null) => {
+    setIsAddingInlineCategory(false);
+    setInlineCategoryName('');
     if (service) {
       setEditingService(service);
       setFormData({
         name: service.name || '',
         description: service.description || '',
-        category: service.category || 'Hair treatment',
+        category: service.category || (categories[0]?.name || ''),
         duration: service.duration || '',
         price: service.price || '',
         branch: service.branch || 'SALON',
@@ -65,7 +85,7 @@ export default function Services() {
       setEditingService(null);
       setFormData({
         name: '',
-        category: 'Hair treatment',
+        category: categories[0]?.name || '',
         price: '',
         duration: '',
         description: '',
@@ -96,6 +116,54 @@ export default function Services() {
     }
   };
 
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      const res = await apiRequest('/categories', {
+        method: 'POST',
+        body: { name: newCategoryName.trim() }
+      });
+      if (res.success) {
+        setNewCategoryName('');
+        fetchCategories();
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to add category');
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category? Services in this category will remain unchanged.')) return;
+    try {
+      const res = await apiRequest(`/categories/${id}`, { method: 'DELETE' });
+      if (res.success) {
+        fetchCategories();
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete category');
+    }
+  };
+
+  const handleCreateInlineCategory = async () => {
+    if (!inlineCategoryName.trim()) return;
+    try {
+      const res = await apiRequest('/categories', {
+        method: 'POST',
+        body: { name: inlineCategoryName.trim() }
+      });
+      if (res.success) {
+        const newCat = res.data;
+        await fetchCategories();
+        setFormData(prev => ({ ...prev, category: newCat.name }));
+        setInlineCategoryName('');
+        setIsAddingInlineCategory(false);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to add category');
+    }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -104,6 +172,23 @@ export default function Services() {
            <p className={styles.subtitle}>Configure your salon & clinic service menu, dynamic pricing, and bundled packages.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
+           <button 
+             onClick={() => setIsCategoryModalOpen(true)}
+             style={{ 
+               background: 'transparent', 
+               color: 'var(--primary)', 
+               padding: '12px 24px', 
+               borderRadius: '16px', 
+               fontWeight: 800,
+               border: '2px solid var(--primary)',
+               cursor: 'pointer',
+               display: 'flex',
+               alignItems: 'center',
+               gap: '8px'
+            }}>
+               <Settings size={20} />
+               <span>Categories</span>
+            </button>
            <button 
              onClick={() => handleOpenModal()}
              style={{ 
@@ -245,19 +330,85 @@ export default function Services() {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Category</label>
-              <select 
-                className={styles.input}
-                value={formData.category}
-                onChange={e => setFormData({...formData, category: e.target.value})}
-              >
-                <option value="Hair treatment">Hair treatment</option>
-                <option value="Clean up">Clean up</option>
-                <option value="Facial basic">Facial basic</option>
-                <option value="Facial advance">Facial advance</option>
-              </select>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Category</label>
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingInlineCategory(!isAddingInlineCategory)}
+                  style={{ 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: 'var(--primary)', 
+                    fontWeight: 700, 
+                    fontSize: '0.85rem', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    padding: 0
+                  }}
+                >
+                  <Plus size={14} /> Add New
+                </button>
+              </div>
+              
+              {isAddingInlineCategory ? (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="text"
+                    className={styles.input}
+                    placeholder="Category name..."
+                    value={inlineCategoryName}
+                    onChange={e => setInlineCategoryName(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleCreateInlineCategory}
+                    style={{ 
+                      background: 'var(--primary)', 
+                      color: 'white', 
+                      padding: '0 12px', 
+                      borderRadius: '12px', 
+                      fontWeight: 700, 
+                      border: 'none',
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsAddingInlineCategory(false);
+                      setInlineCategoryName('');
+                    }}
+                    style={{ 
+                      background: 'var(--bg-main)', 
+                      color: 'var(--text-muted)', 
+                      padding: '0 12px', 
+                      borderRadius: '12px', 
+                      fontWeight: 700, 
+                      border: '1px solid var(--border-light)',
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <select 
+                  className={styles.input}
+                  value={formData.category}
+                  onChange={e => setFormData({...formData, category: e.target.value})}
+                >
+                  {categories.map((cat: any) => (
+                    <option key={cat._id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
               <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Branch</label>
@@ -308,6 +459,72 @@ export default function Services() {
             {editingService ? 'Update Service' : 'Catalog Service'}
           </button>
         </form>
+      </Modal>
+
+      <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Manage Categories">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input 
+              required
+              className={styles.input}
+              placeholder="New category name..."
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button 
+              type="submit"
+              style={{ 
+                background: 'var(--primary)', 
+                color: 'white', 
+                padding: '0 20px', 
+                borderRadius: '12px', 
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Add
+            </button>
+          </form>
+
+          <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {categories.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No categories found. Add one above!</p>
+            ) : (
+              categories.map((cat: any) => (
+                <div 
+                  key={cat._id} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    padding: '10px 16px', 
+                    background: 'var(--bg-card)', 
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-light)',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{cat.name}</span>
+                  <button 
+                    type="button"
+                    onClick={() => handleDeleteCategory(cat._id)}
+                    style={{ 
+                      background: 'transparent', 
+                      border: 'none', 
+                      color: 'var(--primary)', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

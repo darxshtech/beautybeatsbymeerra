@@ -14,6 +14,7 @@ import layoutStyles from '@/styles/layout/Dashboard.module.css';
 import reportStyles from '@/styles/layout/Reports.module.css';
 import cardStyles from '@/styles/components/Card.module.css';
 import { apiRequest } from '@/services/api';
+import Table from '@/components/Table';
 
 export default function ReportsPage() {
   const [topServices, setTopServices] = useState<any[]>([]);
@@ -146,7 +147,7 @@ export default function ReportsPage() {
         <div className={cardStyles.card}>
            <h3 className={reportStyles.chartTitle} style={{ marginBottom: '1.5rem', fontSize: '1.125rem' }}>Top Performing Services</h3>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {topServices.length > 0 ? topServices.map((s, index) => (
+            {topServices.length > 0 ? topServices.slice(0, 5).map((s, index) => (
               <div key={index} className={reportStyles.serviceItem}>
                 <div className={reportStyles.serviceInfo}>
                   <span className={reportStyles.serviceName}>{s.name}</span>
@@ -181,6 +182,28 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Service-wise Breakdown Table */}
+      <section className={cardStyles.card} style={{ marginTop: '2rem' }}>
+         <h3 className={reportStyles.chartTitle} style={{ marginBottom: '1.5rem', fontSize: '1.125rem' }}>Service Sales Frequency (Full Breakdown)</h3>
+         <Table 
+           columns={[
+             { key: 'rank', label: 'Rank', render: (val, index) => (
+                <span style={{ fontWeight: 800, color: 'var(--text-muted)' }}>#{index + 1}</span>
+             )},
+             { key: 'name', label: 'Service Name', render: (val) => (
+                <span style={{ fontWeight: 800 }}>{val.name}</span>
+             )},
+             { key: 'count', label: 'Times Bought', render: (val) => (
+                <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{val.count} bookings</span>
+             )},
+             { key: 'revenue', label: 'Total Revenue', render: (val) => (
+                <span style={{ fontWeight: 900, fontSize: '1.1rem' }}>₹{val.revenue?.toLocaleString() || 0}</span>
+             )}
+           ]}
+           data={topServices}
+         />
       </section>
     </div>
   );

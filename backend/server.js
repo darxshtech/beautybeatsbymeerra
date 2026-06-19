@@ -36,6 +36,7 @@ console.log('Registering User routes...');
 app.use('/api/users', require('./routes/users'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/services', require('./routes/services'));
+app.use('/api/categories', require('./routes/categories'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api/inventory', require('./routes/inventory'));
@@ -70,6 +71,10 @@ const startServer = async () => {
   // Seed default message templates on startup
   const MessageTemplate = require('./models/MessageTemplate');
   MessageTemplate.seedDefaults().catch(err => console.error('Template seed error:', err));
+
+  // Seed default categories on startup
+  const Category = require('./models/Category');
+  Category.seedDefaults().catch(err => console.error('Category seed error:', err));
 
   // Start automatic notification scheduler (daily 9 AM IST)
   const NotificationScheduler = require('./services/notification/NotificationScheduler');

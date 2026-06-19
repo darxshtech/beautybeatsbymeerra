@@ -48,7 +48,7 @@ const getTopServices = async (req, res) => {
       { $match: { status: { $ne: 'CANCELLED' } } },
       { $group: { _id: '$service', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 5 },
+      { $limit: 100 },
       {
         $lookup: {
           from: 'services',

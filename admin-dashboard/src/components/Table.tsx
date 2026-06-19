@@ -3,7 +3,7 @@
 import styles from '@/styles/components/Table.module.css';
 
 interface TableProps {
-  columns: { key: string; label: string; render?: (item: any) => React.ReactNode }[];
+  columns: { key: string; label: string; render?: (item: any, index: number) => React.ReactNode }[];
   data: any[];
   pagination?: {
     page: number;
@@ -35,7 +35,7 @@ export default function Table({ columns, data, pagination }: TableProps) {
               <tr key={i} className={styles.tr}>
                 {columns.map(col => (
                   <td key={col.key}>
-                    {col.render ? col.render(item) : item[col.key]}
+                    {col.render ? col.render(item, i) : item[col.key]}
                   </td>
                 ))}
               </tr>
