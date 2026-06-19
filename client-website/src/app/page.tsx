@@ -182,12 +182,12 @@ export default function HomePage() {
                 className="bg-white rounded-[40px] shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col items-center group overflow-hidden"
               >
                 <div className="w-full h-48 relative overflow-hidden">
-                   <img src={`/images/${s.category?.toLowerCase() === 'skin' ? 'skin' : s.category?.toLowerCase() === 'hair' ? 'hair' : 'bridal'}.png`} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                   <img src={`/images/${s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up') ? 'skin' : s.category?.toLowerCase().includes('hair') ? 'hair' : 'bridal'}.png`} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                    <div className="absolute inset-0 bg-black/10" />
                 </div>
                 <div className="p-10 flex flex-col items-center">
                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-primary mb-6 -mt-16 relative z-10 shadow-lg">
-                      {s.category === 'Hair' ? <Scissors className="w-8 h-8" /> : s.category === 'Skin' ? <Sparkles className="w-8 h-8" /> : <Award className="w-8 h-8" />}
+                      {s.category?.toLowerCase().includes('hair') ? <Scissors className="w-8 h-8" /> : (s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up')) ? <Sparkles className="w-8 h-8" /> : <Award className="w-8 h-8" />}
                    </div>
                    <h3 className="text-2xl font-black mb-4">{s.name}</h3>
                    <p className="text-gray-500 mb-8 line-clamp-2">{s.description}</p>

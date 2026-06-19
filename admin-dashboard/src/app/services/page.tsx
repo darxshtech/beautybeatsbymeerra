@@ -14,7 +14,7 @@ export default function Services() {
   const [editingService, setEditingService] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Haircut',
+    category: 'Hair treatment',
     price: '',
     duration: '',
     description: '',
@@ -54,7 +54,7 @@ export default function Services() {
       setFormData({
         name: service.name || '',
         description: service.description || '',
-        category: service.category || 'Haircut',
+        category: service.category || 'Hair treatment',
         duration: service.duration || '',
         price: service.price || '',
         branch: service.branch || 'SALON',
@@ -65,7 +65,7 @@ export default function Services() {
       setEditingService(null);
       setFormData({
         name: '',
-        category: 'Haircut',
+        category: 'Hair treatment',
         price: '',
         duration: '',
         description: '',
@@ -253,14 +253,10 @@ export default function Services() {
                 value={formData.category}
                 onChange={e => setFormData({...formData, category: e.target.value})}
               >
-                <option value="Haircut">Haircut</option>
-                <option value="Hair Color">Hair Color</option>
-                <option value="Facial">Facial</option>
-                <option value="Massage">Massage</option>
-                <option value="Pedicure">Pedicure</option>
-                <option value="Manicure">Manicure</option>
-                <option value="Skin">Skin</option>
-                <option value="Package">Package</option>
+                <option value="Hair treatment">Hair treatment</option>
+                <option value="Clean up">Clean up</option>
+                <option value="Facial basic">Facial basic</option>
+                <option value="Facial advance">Facial advance</option>
               </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
