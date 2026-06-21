@@ -24,7 +24,7 @@ import apiClient from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const steps = ['Service', 'Schedule', 'Details', 'Payment', 'Confirm'];
+const steps = ['Category', 'Service', 'Schedule', 'Details', 'Payment', 'Confirm'];
 
 export default function BookingPage() {
   const router = useRouter();
@@ -141,7 +141,7 @@ export default function BookingPage() {
       });
 
       if (res.data.success) {
-        setStep(4); // Move to Success/Confirm step
+        setStep(5); // Move to Success/Confirm step
       } else {
         setError(res.data.message || "Booking failed");
       }
@@ -186,72 +186,84 @@ export default function BookingPage() {
           {step === 0 && (
             <div className="space-y-8">
               <div className="text-center mb-12">
-                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Your Treatment</h2>
-                 <p className="text-gray-500">Choose from our signature range of services.</p>
+                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Category</h2>
+                 <p className="text-gray-500">Choose a category of treatment.</p>
               </div>
               {(() => {
                 const displayCategories = categories.length > 0
                   ? categories.map(c => c.name)
                   : Array.from(new Set(services.map(s => s.category).filter(Boolean)));
 
-                const filteredServices = activeCategory === "All"
-                  ? services
-                  : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase());
-
                 return (
-                  <>
-                    <div className="flex flex-wrap gap-2 justify-center mb-8">
-                      {["All", ...displayCategories].map(cat => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setActiveCategory(cat)}
-                          className={cn(
-                            "px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border",
-                            activeCategory?.toLowerCase() === cat?.toLowerCase()
-                              ? "bg-primary text-white border-primary shadow-lg shadow-red-100" 
-                              : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
-                          )}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       {filteredServices.length === 0 ? (
-                         <div className="col-span-1 md:col-span-2 text-center py-12 text-gray-400 font-bold">
-                           No services found in this category.
-                         </div>
-                       ) : (
-                         filteredServices.map(s => (
-                           <button
-                            key={s._id}
-                            onClick={() => { setSelectedService(s); nextStep(); }}
-                            className={cn(
-                              "p-6 rounded-3xl border-2 text-left transition-all hover:bg-red-50 group",
-                              selectedService?._id === s._id ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
-                            )}
-                           >
-                             <div className="flex justify-between items-start">
-                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary mb-4 shadow-sm">
-                                   <Scissors className="w-6 h-6" />
-                                </div>
-                                <p className="text-2xl font-black text-primary">₹{s.price}</p>
-                             </div>
-                             <h3 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors">{s.name}</h3>
-                             <p className="text-sm text-gray-500 font-bold">{s.category} • {s.duration}m</p>
-                           </button>
-                         ))
-                       )}
-                    </div>
-                  </>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {displayCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => { setActiveCategory(cat); nextStep(); }}
+                        className={cn(
+                          "p-8 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
+                          activeCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
+                        )}
+                      >
+                        <h3 className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors uppercase tracking-widest">{cat}</h3>
+                      </button>
+                    ))}
+                  </div>
                 );
               })()}
             </div>
           )}
 
           {step === 1 && (
+            <div className="space-y-8">
+              <div className="flex items-center gap-4 mb-8">
+                <button onClick={prevStep} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
+                   <ChevronLeft className="w-6 h-6 text-gray-600" />
+                </button>
+                <div>
+                   <h2 className="text-4xl font-black text-gray-900 mb-2">Select Service</h2>
+                   <p className="text-gray-500">Choose a service from {activeCategory}.</p>
+                </div>
+              </div>
+              {(() => {
+                const filteredServices = activeCategory === "All"
+                  ? services
+                  : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase());
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {filteredServices.length === 0 ? (
+                       <div className="col-span-1 md:col-span-2 text-center py-12 text-gray-400 font-bold">
+                         No services found in this category.
+                       </div>
+                     ) : (
+                       filteredServices.map(s => (
+                         <button
+                          key={s._id}
+                          onClick={() => { setSelectedService(s); nextStep(); }}
+                          className={cn(
+                            "p-6 rounded-3xl border-2 text-left transition-all hover:bg-red-50 group",
+                            selectedService?._id === s._id ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
+                          )}
+                         >
+                           <div className="flex justify-between items-start">
+                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary mb-4 shadow-sm">
+                                 <Scissors className="w-6 h-6" />
+                              </div>
+                              <p className="text-2xl font-black text-primary">₹{s.price}</p>
+                           </div>
+                           <h3 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors">{s.name}</h3>
+                           <p className="text-sm text-gray-500 font-bold">{s.category} • {s.duration}m</p>
+                         </button>
+                       ))
+                     )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {step === 2 && (
             <div className="space-y-8">
                <div className="text-center mb-12">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Build Your Schedule</h2>
@@ -390,7 +402,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-8">
               <div className="text-center mb-12">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Final Details</h2>
@@ -457,7 +469,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
              <div className="space-y-8">
                 <div className="text-center mb-12">
                    <h2 className="text-4xl font-black text-gray-900 mb-2">Secure Checkout</h2>
@@ -649,7 +661,7 @@ export default function BookingPage() {
              </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <div className="text-center py-12 space-y-8">
                <motion.div 
                  initial={{ scale: 0 }}

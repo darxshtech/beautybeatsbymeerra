@@ -10,6 +10,13 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BeautyBeats | Hydra Facial Clinic",
   description: "Advanced clinical skincare, hydra facials, and dermatological treatments.",
+  manifest: "/manifest.json",
+  themeColor: "#ffffff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BeautyBeats",
+  },
 };
 
 export default function RootLayout({

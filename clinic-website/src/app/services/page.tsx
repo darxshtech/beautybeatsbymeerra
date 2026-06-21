@@ -11,18 +11,42 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
-        const res = await apiClient.get('/services?branch=CLINIC');
-        if (res.data.success) {
-          // Group by category
-          const grouped = res.data.data.reduce((acc: any, service: any) => {
-            const cat = service.category || 'General';
-            if (!acc[cat]) acc[cat] = { category: cat, items: [], img: '/images/hair.png' };
-            acc[cat].items.push(service);
-            return acc;
-          }, {});
-          setCategories(Object.values(grouped));
+        const [catRes, serRes] = await Promise.all([
+          apiClient.get('/categories').catch(() => ({ data: { success: false } })),
+          apiClient.get('/services?branch=CLINIC').catch(() => ({ data: { success: false } }))
+        ]);
+
+        let availableCategories: string[] = [];
+        if (catRes.data && catRes.data.success && catRes.data.data?.length > 0) {
+          availableCategories = catRes.data.data.map((c: any) => c.name);
+        }
+
+        if (serRes.data && serRes.data.success && serRes.data.data?.length > 0) {
+          const services = serRes.data.data;
+          
+          if (availableCategories.length === 0) {
+            availableCategories = Array.from(new Set(services.map((s: any) => s.category).filter(Boolean))) as string[];
+          }
+
+          const groupedCategories = availableCategories.map(catName => {
+            const catImage = catName.toLowerCase().includes('skin') || catName.toLowerCase().includes('facial') || catName.toLowerCase().includes('clean up')
+              ? '/images/skin.png'
+              : catName.toLowerCase().includes('hair') || catName.toLowerCase().includes('keratin')
+                ? '/images/hair.png'
+                : '/images/bridal.png';
+
+            return {
+              category: catName,
+              img: catImage,
+              items: services.filter((s: any) => s.category === catName)
+            };
+          }).filter(c => c.items.length > 0);
+
+          if (groupedCategories.length > 0) {
+            setCategories(groupedCategories);
+          }
         }
       } catch (err) {
         console.error('Fetch services error:', err);
@@ -30,7 +54,7 @@ export default function ServicesPage() {
         setLoading(false);
       }
     };
-    fetchServices();
+    fetchData();
   }, []);
 
   if (loading) return <div className="p-20 text-center font-black text-gray-400">Curating Services...</div>;

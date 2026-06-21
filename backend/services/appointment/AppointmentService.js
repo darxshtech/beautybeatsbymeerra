@@ -257,10 +257,24 @@ class AppointmentService {
       }
     }
 
-    // Notify Admin
+    // Notify Admin via WhatsApp
     if (process.env.ADMIN_PHONE) {
       const adminMsg = `🚨 New Appointment Alert! 📅\nCustomer: ${user?.name || 'Guest'} (${user?.phone || 'No phone'})\nService: ${selectedService?.name || 'Service'}\nDate: ${new Date(appointmentDate).toLocaleDateString()}\nTime: ${timeSlot}\nBranch: ${data.branch || 'SALON'}`;
       WhatsappService.sendMessage(process.env.ADMIN_PHONE, adminMsg).catch(err => console.error('Admin Booking Notification Error:', err));
+    }
+
+    // Create AdminNotification in Admin Panel
+    const AdminNotification = require('../../models/AdminNotification');
+    try {
+      await AdminNotification.create({
+        type: 'NEW_APPOINTMENT',
+        title: '📅 New Appointment Booked',
+        message: `${user?.name || 'A customer'} booked an appointment for ${selectedService?.name || 'a service'} on ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`,
+        customer: finalCustomerId,
+        appointment: appointment._id
+      });
+    } catch (err) {
+      console.error('Error creating admin notification for new appointment:', err);
     }
 
     // Increment visit count for user asynchronously

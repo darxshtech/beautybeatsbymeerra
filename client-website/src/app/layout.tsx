@@ -10,6 +10,13 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BeautyBeats | Premium Salon & Clinic",
   description: "Experience the ultimate beauty transformation at BeautyBeats Salon and Clinic.",
+  manifest: "/manifest.json",
+  themeColor: "#ffffff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BeautyBeats",
+  },
 };
 
 export default function RootLayout({
