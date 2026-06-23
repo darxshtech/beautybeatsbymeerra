@@ -8,7 +8,7 @@ const getFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.find({})
       .populate('customer', 'name email')
-      .populate('service', 'name')
+      .populate('services', 'name')
       .populate('appointment', 'appointmentDate timeSlot')
       .sort('-createdAt');
     res.json({ success: true, data: feedback });
@@ -24,7 +24,7 @@ const getPublicFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.find({ isApproved: true, rating: { $gte: 4 } })
       .populate('customer', 'name')
-      .populate('service', 'name')
+      .populate('services', 'name')
       .sort('-createdAt')
       .limit(10);
     res.json({ success: true, data: feedback });
@@ -41,7 +41,7 @@ const addFeedback = async (req, res) => {
 
   try {
     // Look up the appointment to get customer and service
-    const app = await Appointment.findById(appointment).populate('service', 'name');
+    const app = await Appointment.findById(appointment).populate('services', 'name');
     if (!app) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }

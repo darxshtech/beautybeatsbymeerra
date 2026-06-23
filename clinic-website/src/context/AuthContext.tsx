@@ -7,6 +7,7 @@ interface AuthContextType {
   user: any;
   loading: boolean;
   login: (email: string, phone: string) => Promise<void>;
+  register: (name: string, email: string, phone: string) => Promise<void>;
   googleLogin: (idToken: string) => Promise<boolean>;
   completeProfile: (data: any) => Promise<void>;
   logout: () => void;
@@ -40,9 +41,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await apiClient.post('/auth/login', { email, password: phone });
     if (res.data.success) {
       localStorage.setItem('token', res.data.token);
-      setUser(res.data.user);
+      const userData = res.data.user;
+      setUser({ ...userData, _id: userData._id || userData.id });
     } else {
       throw new Error(res.data.error || 'Login failed');
+    }
+  };
+
+  const register = async (name: string, email: string, phone: string) => {
+    const res = await apiClient.post('/auth/register', { name, email, password: phone, phone });
+    if (res.data.success) {
+      localStorage.setItem('token', res.data.token);
+      const userData = res.data.user;
+      setUser({ ...userData, _id: userData._id || userData.id });
+    } else {
+      throw new Error(res.data.error || 'Registration failed');
     }
   };
 
@@ -50,7 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await apiClient.post('/auth/google', { idToken });
     if (res.data.success) {
       localStorage.setItem('token', res.data.token);
-      setUser(res.data.user);
+      const userData = res.data.user;
+      setUser({ ...userData, _id: userData._id || userData.id });
       return res.data.isProfileComplete;
     } else {
       throw new Error(res.data.error || 'Google Login failed');
@@ -73,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, googleLogin, completeProfile, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, completeProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

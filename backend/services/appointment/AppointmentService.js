@@ -87,14 +87,14 @@ class AppointmentService {
 
       queryObj.$or = [
         { customer: { $in: customers.map(c => c._id) } },
-        { service: { $in: services.map(s => s._id) } }
+        { services: { $in: services.map(s => s._id) } }
       ];
     }
 
     const appointments = await Appointment.find(queryObj)
       .populate('customer', 'name phone')
       .populate('staff', 'name')
-      .populate('service', 'name price duration')
+      .populate('services', 'name price duration')
       .populate('billing', 'paymentStatus pendingAmount total splitDetails')
       .sort('-appointmentDate');
 
@@ -108,7 +108,10 @@ class AppointmentService {
    * Create an appointment (Guest or Registered)
    */
   async createAppointment(data) {
-    const { service, appointmentDate, timeSlot, staff, notes, customerInfo, customerId } = data;
+    const { services, service, appointmentDate, timeSlot, staff, notes, customerInfo, customerId } = data;
+
+    // Handle legacy single service
+    const finalServices = services || (service ? [service] : []);
 
     let finalCustomerId = customerId;
 
@@ -130,6 +133,10 @@ class AppointmentService {
       throw new ErrorResponse('Customer information is required', 400);
     }
 
+    if (!finalServices || finalServices.length === 0) {
+      throw new ErrorResponse('At least one service is required', 400);
+    }
+
     // --- Smart Assignment Logic ---
     if (staff) {
       // Check if specifically requested staff is available
@@ -148,7 +155,7 @@ class AppointmentService {
 
     const appointment = await Appointment.create({
       customer: finalCustomerId,
-      service,
+      services: finalServices,
       appointmentDate: new Date(appointmentDate),
       timeSlot,
       staff: data.staff,
@@ -160,11 +167,12 @@ class AppointmentService {
     // --- Automated Billing Creation ---
     const Service = require('../../models/Service');
     const Billing = require('../../models/Billing');
-    const selectedService = await Service.findById(service);
+    const selectedServicesDoc = await Service.find({ _id: { $in: finalServices } });
     
-    if (selectedService) {
+    if (selectedServicesDoc && selectedServicesDoc.length > 0) {
+      let totalServicesPrice = selectedServicesDoc.reduce((sum, s) => sum + s.price, 0);
       let discount = 0;
-      let total = selectedService.price;
+      let total = totalServicesPrice;
 
       // --- Coupon Redemption ---
       if (data.couponCode) {
@@ -172,11 +180,11 @@ class AppointmentService {
         const coupon = await Coupon.findOne({ code: data.couponCode.toUpperCase(), isActive: true, isUsed: false });
         if (coupon && new Date() <= coupon.expiryDate) {
           if (coupon.discountType === 'PERCENTAGE') {
-            discount = Math.round((selectedService.price * coupon.discountValue) / 100);
+            discount = Math.round((totalServicesPrice * coupon.discountValue) / 100);
           } else {
             discount = coupon.discountValue;
           }
-          total = Math.max(0, selectedService.price - discount);
+          total = Math.max(0, totalServicesPrice - discount);
           
           // Mark coupon as used
           coupon.isUsed = true;
@@ -189,7 +197,7 @@ class AppointmentService {
       if (data.pointsRedeemed && data.pointsRedeemed > 0) {
         const ptsDiscount = data.pointsRedeemed * 10;
         discount += ptsDiscount;
-        total = Math.max(0, selectedService.price - discount);
+        total = Math.max(0, totalServicesPrice - discount);
         
         // Deduct points from user
         User.findByIdAndUpdate(finalCustomerId, {
@@ -200,16 +208,17 @@ class AppointmentService {
       const billing = await Billing.create({
         appointment: appointment._id,
         customer: finalCustomerId,
-        items: [{
-          name: selectedService.name,
-          price: selectedService.price,
+        items: selectedServicesDoc.map(s => ({
+          name: s.name,
+          price: s.price,
           isService: true
-        }],
-        subtotal: selectedService.price,
+        })),
+        subtotal: totalServicesPrice,
         discount: discount,
         total: total,
         paymentMethod: data.paymentMethod || 'UPI',
         paymentStatus: data.paymentMethod === 'CASH' ? 'PENDING' : 'PAID',
+        pendingAmount: data.paymentMethod === 'CASH' ? total : 0,
         branch: data.branch || 'SALON'
       });
       appointment.billing = billing._id;
@@ -219,6 +228,7 @@ class AppointmentService {
     // Send WhatsApp Confirmations
     const user = await User.findById(finalCustomerId);
     const WhatsappService = require('../notification/WhatsappService');
+    const serviceNames = selectedServicesDoc ? selectedServicesDoc.map(s => s.name).join(', ') : 'Services';
     
     // Notify Customer (Template based for new clients)
     if (user && user.phone) {
@@ -259,7 +269,7 @@ class AppointmentService {
 
     // Notify Admin via WhatsApp
     if (process.env.ADMIN_PHONE) {
-      const adminMsg = `🚨 New Appointment Alert! 📅\nCustomer: ${user?.name || 'Guest'} (${user?.phone || 'No phone'})\nService: ${selectedService?.name || 'Service'}\nDate: ${new Date(appointmentDate).toLocaleDateString()}\nTime: ${timeSlot}\nBranch: ${data.branch || 'SALON'}`;
+      const adminMsg = `🚨 New Appointment Alert! 📅\nCustomer: ${user?.name || 'Guest'} (${user?.phone || 'No phone'})\nService: ${serviceNames}\nDate: ${new Date(appointmentDate).toLocaleDateString()}\nTime: ${timeSlot}\nBranch: ${data.branch || 'SALON'}`;
       WhatsappService.sendMessage(process.env.ADMIN_PHONE, adminMsg).catch(err => console.error('Admin Booking Notification Error:', err));
     }
 
@@ -269,7 +279,7 @@ class AppointmentService {
       await AdminNotification.create({
         type: 'NEW_APPOINTMENT',
         title: '📅 New Appointment Booked',
-        message: `${user?.name || 'A customer'} booked an appointment for ${selectedService?.name || 'a service'} on ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`,
+        message: `${user?.name || 'A customer'} booked an appointment for ${serviceNames} on ${new Date(appointmentDate).toLocaleDateString()} at ${timeSlot}.`,
         customer: finalCustomerId,
         appointment: appointment._id
       });
@@ -304,14 +314,15 @@ class AppointmentService {
 
     // Auto-Review messaging when completed
     if (status === 'COMPLETED' && updated.customer) {
-      const populatedApp = await Appointment.findById(updated._id).populate('service', 'name').populate('customer', 'name phone');
+      const populatedApp = await Appointment.findById(updated._id).populate('services', 'name').populate('customer', 'name phone');
       if (populatedApp?.customer?.phone) {
         const NotificationService = require('../notification/NotificationService');
         const reviewLink = `http://localhost:3000/review?appId=${updated._id}`;
+        const sNames = populatedApp.services?.map(s => s.name).join(', ') || 'treatment';
         NotificationService.triggerNotification('REVIEW_REQUEST', {
           phone: populatedApp.customer.phone,
           customerName: populatedApp.customer.name,
-          service: populatedApp.service?.name || 'treatment',
+          service: sNames,
           branch: updated.branch || 'SALON',
           reviewLink
         }).catch(err => console.error('Review WhatsApp Error:', err));
@@ -320,7 +331,8 @@ class AppointmentService {
       // Notify Admin that appointment is completed
       if (process.env.ADMIN_PHONE) {
         const WhatsappService = require('../notification/WhatsappService');
-        const adminMsg = `✅ Appointment Completed!\nCustomer: ${populatedApp?.customer?.name || 'Guest'} (${populatedApp?.customer?.phone || 'No phone'})\nService: ${populatedApp?.service?.name || 'treatment'}\nBranch: ${updated.branch || 'SALON'}`;
+        const sNames = populatedApp.services?.map(s => s.name).join(', ') || 'treatment';
+        const adminMsg = `✅ Appointment Completed!\nCustomer: ${populatedApp?.customer?.name || 'Guest'} (${populatedApp?.customer?.phone || 'No phone'})\nService: ${sNames}\nBranch: ${updated.branch || 'SALON'}`;
         WhatsappService.sendMessage(process.env.ADMIN_PHONE, adminMsg).catch(err => console.error('Admin Completion Notification Error:', err));
       }
     }

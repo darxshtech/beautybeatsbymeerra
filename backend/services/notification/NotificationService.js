@@ -76,7 +76,7 @@ class NotificationService {
     const upcomingAppointments = await Appointment.find({
       appointmentDate: { $gte: tomorrow, $lt: dayAfterTomorrow },
       status: { $in: ['PENDING', 'CONFIRMED'] }
-    }).populate('customer', 'name phone').populate('service', 'name');
+    }).populate('customer', 'name phone').populate('services', 'name');
 
     upcomingAppointments.forEach(app => {
       if (app.customer) {

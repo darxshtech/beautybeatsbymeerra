@@ -163,7 +163,7 @@ const getStaffClientStats = async (req, res) => {
 
     const appointments = await Appointment.find(query)
     .populate('customer', 'name phone email visitCount loyaltyPoints')
-    .populate('service', 'name price')
+    .populate('services', 'name price')
     .sort('-appointmentDate');
 
     // Grouping by customer to count unique clients and their sessions

@@ -6,8 +6,10 @@ const User = require('../models/User');
 
 exports.getAvailability = async (req, res, next) => {
   try {
-    const { date, staffId } = req.query;
+    const { date, staffId, duration } = req.query;
     if (!date) return res.status(400).json({ success: false, message: 'Date is required' });
+    const serviceDuration = parseInt(duration) || 30;
+    const slotsNeeded = Math.ceil(serviceDuration / 30);
 
     // Dynamic pool of slots for salon (10 AM to 7 PM)
     const slots = [
@@ -79,9 +81,25 @@ exports.getAvailability = async (req, res, next) => {
           }
         }
 
-        // 3. Check if staff has an appointment conflict
-        const isFree = await AppointmentService.isStaffAvailable(s._id, date, slot, excludeAppId);
-        if (isFree) {
+        // 3. Check if staff has enough contiguous free slots for the requested duration
+        let canAccommodate = true;
+        const slotIndex = slots.indexOf(slot);
+        
+        if (slotIndex + slotsNeeded > slots.length) {
+          canAccommodate = false; // Not enough time before end of day
+          continue;
+        }
+
+        for (let i = 0; i < slotsNeeded; i++) {
+          const slotToCheck = slots[slotIndex + i];
+          const isFree = await AppointmentService.isStaffAvailable(s._id, date, slotToCheck, excludeAppId);
+          if (!isFree) {
+            canAccommodate = false;
+            break;
+          }
+        }
+
+        if (canAccommodate) {
           available = true;
           break; // Found someone! This slot is available
         }
@@ -187,14 +205,15 @@ exports.updateAppointment = async (req, res, next) => {
 
     // Trigger review request if status updated to COMPLETED
     if (req.body.status === 'COMPLETED') {
-      const populatedApp = await Appointment.findById(req.params.id).populate('service', 'name').populate('customer', 'name phone');
+      const populatedApp = await Appointment.findById(req.params.id).populate('services', 'name').populate('customer', 'name phone');
       if (populatedApp?.customer?.phone) {
         const NotificationService = require('../services/notification/NotificationService');
         const reviewLink = `http://localhost:3000/review?appId=${populatedApp._id}`;
+        const sNames = populatedApp.services?.map(s => s.name).join(', ') || 'treatment';
         NotificationService.triggerNotification('REVIEW_REQUEST', {
           phone: populatedApp.customer.phone,
           customerName: populatedApp.customer.name,
-          service: populatedApp.service?.name || 'treatment',
+          service: sNames,
           reviewLink,
           appId: populatedApp._id
         }).catch(err => console.error('Review WhatsApp Error:', err));
@@ -267,7 +286,7 @@ exports.getStaffAppointments = async (req, res, next) => {
       status: { $in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'IN-PROGRESS', 'COMPLETED'] }
     })
       .populate('customer', 'name phone email skinToneInfo birthday anniversary visitCount lastVisit loyaltyPoints')
-      .populate('service', 'name category duration price')
+      .populate('services', 'name category duration price')
       .populate('staff', 'name')
       .populate('billing', 'paymentStatus pendingAmount total splitDetails')
       .sort({ type: -1, createdAt: 1 }); // WALKIN (W) before ONLINE (O), then by creation time
@@ -297,14 +316,15 @@ exports.finishService = async (req, res, next) => {
 
     const appointment = await Appointment.findById(appointmentId)
       .populate('customer', 'name phone visitCount')
-      .populate('service', 'name price')
+      .populate('services', 'name price')
       .populate('staff', 'name');
 
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
-    const totalAmount = amount || appointment.service?.price || 0;
+    const totalServicePrice = appointment.services?.reduce((sum, s) => sum + s.price, 0) || 0;
+    const totalAmount = amount || totalServicePrice;
     
     let paidAmount = totalAmount;
     let pendingAmount = 0;
@@ -319,8 +339,8 @@ exports.finishService = async (req, res, next) => {
     } else {
       // If regular payment but amount is less than total
       // Assume amount provided is the paid amount if explicitly sent, else full price
-      if (req.body.amount !== undefined && Number(req.body.amount) < (appointment.service?.price || 0)) {
-        pendingAmount = Math.max(0, (appointment.service?.price || 0) - Number(req.body.amount));
+      if (req.body.amount !== undefined && Number(req.body.amount) < totalServicePrice) {
+        pendingAmount = Math.max(0, totalServicePrice - Number(req.body.amount));
         paymentStatus = 'PARTIAL';
       }
     }
@@ -345,14 +365,14 @@ exports.finishService = async (req, res, next) => {
       billing = await Billing.create({
         appointment: appointmentId,
         customer: appointment.customer._id,
-        items: [{
-          name: appointment.service?.name || 'Service',
-          price: appointment.service?.price || 0,
+        items: appointment.services ? appointment.services.map(s => ({
+          name: s.name,
+          price: s.price,
           quantity: 1,
           isService: true
-        }],
-        subtotal: appointment.service?.price || 0,
-        total: appointment.service?.price || 0,
+        })) : [],
+        subtotal: totalServicePrice,
+        total: totalServicePrice,
         paymentMethod: paymentMethod || 'CASH',
         splitDetails: paymentMethod === 'SPLIT' ? splitDetails : undefined,
         pendingAmount: pendingAmount,
@@ -383,10 +403,12 @@ exports.finishService = async (req, res, next) => {
         ? 'Prepaid Balance'
         : paymentMethod || 'Cash';
 
+    const sNames = appointment.services?.map(s => s.name).join(', ') || 'service';
+
     await AdminNotification.create({
       type: 'SERVICE_FINISHED',
       title: '✅ Service Completed',
-      message: `${employee?.name || 'Staff'} has finished attending ${appointment.customer?.name || 'Customer'} for ${appointment.service?.name || 'service'}.`,
+      message: `${employee?.name || 'Staff'} has finished attending ${appointment.customer?.name || 'Customer'} for ${sNames}.`,
       employee: employeeId,
       customer: appointment.customer?._id,
       appointment: appointmentId
@@ -395,13 +417,13 @@ exports.finishService = async (req, res, next) => {
     await AdminNotification.create({
       type: 'PAYMENT_RECEIVED',
       title: '💰 Payment Received',
-      message: `Payment of ₹${amount || appointment.service?.price || 0} received via ${paymentDisplay} from ${appointment.customer?.name || 'Customer'}.`,
+      message: `Payment of ₹${amount || totalServicePrice} received via ${paymentDisplay} from ${appointment.customer?.name || 'Customer'}.`,
       employee: employeeId,
       customer: appointment.customer?._id,
       appointment: appointmentId,
       paymentInfo: {
         method: paymentMethod || 'CASH',
-        amount: amount || appointment.service?.price || 0,
+        amount: amount || totalServicePrice,
         transactionId: transactionId || ''
       }
     });
@@ -415,8 +437,8 @@ exports.finishService = async (req, res, next) => {
         `Hi ${appointment.customer?.name || 'Customer'},`,
         `Thank you for your visit! Your service is complete.`,
         ``,
-        `*Service:* ${appointment.service?.name || 'Salon Service'}`,
-        `*Amount Paid:* ₹${amount || appointment.service?.price || 0}`,
+        `*Service:* ${sNames}`,
+        `*Amount Paid:* ₹${amount || totalServicePrice}`,
         `*Payment Mode:* ${paymentMethod || 'CASH'}`,
         `*Date:* ${new Date().toLocaleDateString('en-IN')}`,
         ``,
@@ -434,7 +456,7 @@ exports.finishService = async (req, res, next) => {
         await NotificationService.triggerNotification('REVIEW_REQUEST', {
           phone: appointment.customer.phone,
           customerName: appointment.customer.name,
-          service: appointment.service?.name || 'treatment',
+          service: sNames,
           reviewLink,
           appId: appointment._id
         }).catch(err => console.error('Review Notification Error:', err));

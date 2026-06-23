@@ -5,6 +5,7 @@ const customerValidator = {
     const schema = Joi.object({
       name: Joi.string().min(2).max(50).required(),
       phone: Joi.string().required(),
+      whatsappNumber: Joi.string().allow('', null),
       email: Joi.string().email().allow('', null),
       address: Joi.string().allow('', null),
       birthday: Joi.date().allow(null, ''),
@@ -31,6 +32,7 @@ const customerValidator = {
       name: Joi.string().min(2).max(50),
       email: Joi.string().email().allow('', null),
       phone: Joi.string(),
+      whatsappNumber: Joi.string().allow('', null),
       address: Joi.string().allow('', null),
       skinType: Joi.string().allow('', null),
       birthday: Joi.date().allow(null, ''),

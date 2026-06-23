@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Scissors, CheckCircle, XCircle, Search } from 'lucide-react';
+import { Calendar, Clock, User, Scissors, CheckCircle, XCircle, Search, Eye } from 'lucide-react';
 import styles from '@/styles/layout/Dashboard.module.css';
 import cardStyles from '@/styles/components/Card.module.css';
 import { apiRequest } from '@/services/api';
@@ -14,6 +14,8 @@ export default function Appointments() {
   const [services, setServices] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewingAppt, setViewingAppt] = useState<any>(null);
+  const [customerHistory, setCustomerHistory] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     customerId: '',
     serviceId: '',
@@ -21,6 +23,19 @@ export default function Appointments() {
     timeSlot: '',
     notes: ''
   });
+
+  const handleViewDetails = async (appt: any) => {
+    setViewingAppt(appt);
+    setCustomerHistory([]);
+    if (appt.customer?._id) {
+       try {
+         const res = await apiRequest(`/appointments?customerId=${appt.customer._id}`);
+         if (res.success) setCustomerHistory(res.data);
+       } catch (err) {
+         console.error(err);
+       }
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -153,10 +168,12 @@ export default function Appointments() {
           { key: 'customer', label: 'Customer', render: (val) => (
              <span style={{ fontWeight: 700 }}>{val.customer?.name || 'Guest'}</span>
           )},
-          { key: 'service', label: 'Service', render: (val) => (
+          { key: 'services', label: 'Services', render: (val) => (
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Scissors size={14} color="var(--text-muted)" />
-                <span style={{ fontWeight: 600 }}>{val.service?.name}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {val.services?.map((s: any) => s.name).join(', ') || 'No Services'}
+                </span>
              </div>
           )},
           { key: 'staff', label: 'Assigned To', render: (val) => (
@@ -194,6 +211,14 @@ export default function Appointments() {
           }},
           { key: 'actions', label: 'Actions', render: (val) => (
              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  className={styles.pageBtn} 
+                  style={{ padding: '6px' }} 
+                  title="View Details"
+                  onClick={() => handleViewDetails(val)}
+                >
+                   <Eye size={18} />
+                </button>
                 <button 
                   className={styles.pageBtn} 
                   style={{ padding: '6px' }} 
@@ -299,6 +324,52 @@ export default function Appointments() {
             Confirm Booking
           </button>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!viewingAppt} onClose={() => setViewingAppt(null)} title="Appointment Details">
+         {viewingAppt && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
+               <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Booking Info</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Date: {new Date(viewingAppt.appointmentDate).toLocaleDateString()} at {viewingAppt.timeSlot}</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Status: {viewingAppt.status}</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Staff: {viewingAppt.staff?.name || 'Any'}</p>
+               </div>
+
+               <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Services Ordered</h3>
+                  {viewingAppt.services?.map((s:any, i:number) => (
+                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        <span>{s.name}</span>
+                        <span>₹{s.price}</span>
+                     </div>
+                  ))}
+               </div>
+
+               <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Payment Details</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Total Amount: ₹{viewingAppt.billing?.total || viewingAppt.services?.reduce((acc: number, s: any) => acc + (s.price || 0), 0) || 0}</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Payment Status: {viewingAppt.billing?.paymentStatus || 'N/A'}</p>
+                  {viewingAppt.billing && (
+                     <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Pending Amount: ₹{viewingAppt.billing.pendingAmount || 0}</p>
+                  )}
+               </div>
+
+               <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Client History with Salon</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Name: {viewingAppt.customer?.name || 'Guest'}</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Total Visits: {customerHistory.length}</p>
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                     {customerHistory.map(h => (
+                        <div key={h._id} style={{ fontSize: '12px', padding: '8px', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                           <p><strong>{new Date(h.appointmentDate).toLocaleDateString()}</strong> - {h.status}</p>
+                           <p>{h.services?.map((s:any)=>s.name).join(', ')}</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+         )}
       </Modal>
     </div>
   );

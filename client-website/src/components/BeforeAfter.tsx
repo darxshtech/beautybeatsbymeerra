@@ -6,6 +6,30 @@ import { motion } from 'framer-motion';
 export default function BeforeAfter() {
   const [sliderPos, setSliderPos] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [beforeImg, setBeforeImg] = useState('/images/before.png');
+  const [afterImg, setAfterImg] = useState('/images/after.png');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransformation = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api';
+        const res = await fetch(`${API_URL}/website-content?branch=SALON&isActive=true`);
+        const json = await res.json();
+        if (json.success && json.data?.length > 0) {
+          const before = json.data.find((item: any) => item.type === 'TRANSFORMATION_BEFORE');
+          const after = json.data.find((item: any) => item.type === 'TRANSFORMATION_AFTER');
+          if (before) setBeforeImg(before.imageUrl);
+          if (after) setAfterImg(after.imageUrl);
+        }
+      } catch (err) {
+        console.error('Error loading dynamic transformation:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransformation();
+  }, []);
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!containerRef.current) return;
@@ -30,7 +54,7 @@ export default function BeforeAfter() {
        >
          {/* After Image (Background) */}
          <img 
-            src="/images/after.png" 
+            src={afterImg} 
             alt="After Makeup" 
             className="absolute inset-0 w-full h-full object-cover"
          />
@@ -41,7 +65,7 @@ export default function BeforeAfter() {
             style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
          >
             <img 
-              src="/images/before.png" 
+              src={beforeImg} 
               alt="Before Makeup" 
               className="absolute inset-0 w-full h-full object-cover"
             />

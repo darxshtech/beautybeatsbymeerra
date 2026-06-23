@@ -3,15 +3,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, Clock, Play, Users, ChevronRight } from 'lucide-react';
+import axios from 'axios';
 
-const gallery = [
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api';
+
+const fallbackGallery = [
   { img: "/images/ambience.png", title: "Luxury Ambience", desc: "A serene and sophisticated environment designed for your relaxation." },
   { img: "/images/hygiene.png", title: "Clinical Hygiene", desc: "Highest standards of cleanliness and sterilized equipment for your safety." },
   { img: "/images/waiting.png", title: "Premium Lounge", desc: "Relax in our comfortable waiting area with high-end hospitality." },
   { img: "/images/staff.png", title: "Expert Care", desc: "Our professional staff values your time and provides personalized attention." },
 ];
 
-const videoReviews = [
+const fallbackVideos = [
   { id: 1, title: "Bridal Makeover", duration: "Premium Experience", url: "/images/IMG_5453.MOV" },
   { id: 2, title: "Hair Styling", duration: "Expert Artistry", url: "/images/IMG_5456.MOV" },
   { id: 3, title: "Nail & Lash Glamour", duration: "Signature Touch", url: "/images/IMG_5464.MOV" },
@@ -19,7 +22,7 @@ const videoReviews = [
   { id: 5, title: "Hair Highlights", duration: "Trending Looks", url: "/images/IMG_5476.MOV" },
 ];
 
-function VideoCard({ v }: { v: typeof videoReviews[0] }) {
+function VideoCard({ v }: { v: any }) {
   const [isHovered, setIsHovered] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -71,6 +74,40 @@ function VideoCard({ v }: { v: typeof videoReviews[0] }) {
 }
 
 export default function SalonExperience() {
+  const [gallery, setGallery] = useState(fallbackGallery);
+  const [videoReviews, setVideoReviews] = useState(fallbackVideos);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const [galleryRes, videoRes] = await Promise.all([
+          axios.get(`${API_URL}/website-content?type=WAIT_FREE_GALLERY&isActive=true&branch=SALON`),
+          axios.get(`${API_URL}/website-content?type=TOUR_VIDEO&isActive=true&branch=SALON`)
+        ]);
+
+        if (galleryRes.data.success && galleryRes.data.data.length > 0) {
+          setGallery(galleryRes.data.data.map((item: any) => ({
+            img: item.imageUrl,
+            title: item.title || "Luxury Ambience",
+            desc: item.subtitle || "A serene and sophisticated environment."
+          })));
+        }
+
+        if (videoRes.data.success && videoRes.data.data.length > 0) {
+          setVideoReviews(videoRes.data.data.map((item: any, index: number) => ({
+            id: item._id || index,
+            title: item.title || "Salon Tour",
+            duration: item.subtitle || "Premium Experience",
+            url: item.imageUrl
+          })));
+        }
+      } catch (err) {
+        // Silently fall back to default arrays
+      }
+    };
+    fetchContent();
+  }, []);
+
   return (
     <div className="space-y-16 md:space-y-32 py-12 md:py-24">
        {/* Ambience & Experience Grid */}

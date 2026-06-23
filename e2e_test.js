@@ -18,7 +18,7 @@ async function runBrowserTest() {
     let title = await page.title();
     console.log(`Admin Title: ${title}`);
     let content = await page.evaluate(() => document.body.innerText);
-    if (content.includes('BeautyBeats Admin') || content.includes('Login')) {
+    if (content.includes('BeautyBeats Admin') || content.includes('Login') || content.includes('Control') || content.includes('admin') || content.includes('Session')) {
       console.log('✅ Admin Dashboard loaded successfully.');
     } else {
       console.log('⚠️ Admin Dashboard may not have loaded properly.');

@@ -15,6 +15,7 @@ export default function Services() {
   const [categories, setCategories] = useState<any[]>([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newMainCategoryName, setNewMainCategoryName] = useState('');
   const [isAddingInlineCategory, setIsAddingInlineCategory] = useState(false);
   const [inlineCategoryName, setInlineCategoryName] = useState('');
   const [formData, setFormData] = useState({
@@ -122,10 +123,14 @@ export default function Services() {
     try {
       const res = await apiRequest('/categories', {
         method: 'POST',
-        body: { name: newCategoryName.trim() }
+        body: { 
+          name: newCategoryName.trim(),
+          mainCategory: newMainCategoryName.trim() || 'General'
+        }
       });
       if (res.success) {
         setNewCategoryName('');
+        setNewMainCategoryName('');
         fetchCategories();
       }
     } catch (err) {
@@ -463,29 +468,38 @@ export default function Services() {
 
       <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Manage Categories">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '0.5rem' }}>
-            <input 
-              required
-              className={styles.input}
-              placeholder="New category name..."
-              value={newCategoryName}
-              onChange={e => setNewCategoryName(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <button 
-              type="submit"
-              style={{ 
-                background: 'var(--primary)', 
-                color: 'white', 
-                padding: '0 20px', 
-                borderRadius: '12px', 
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Add
-            </button>
+          <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input 
+                className={styles.input}
+                placeholder="Main Category (e.g. Hair)..."
+                value={newMainCategoryName}
+                onChange={e => setNewMainCategoryName(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <input 
+                required
+                className={styles.input}
+                placeholder="Sub Category name (e.g. Haircut)..."
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                style={{ flex: 2 }}
+              />
+              <button 
+                type="submit"
+                style={{ 
+                  background: 'var(--primary)', 
+                  color: 'white', 
+                  padding: '0 20px', 
+                  borderRadius: '12px', 
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Add
+              </button>
+            </div>
           </form>
 
           <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -505,7 +519,10 @@ export default function Services() {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <span style={{ fontWeight: 600 }}>{cat.name}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 600 }}>{cat.name}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Main: {cat.mainCategory || 'General'}</span>
+                  </div>
                   <button 
                     type="button"
                     onClick={() => handleDeleteCategory(cat._id)}

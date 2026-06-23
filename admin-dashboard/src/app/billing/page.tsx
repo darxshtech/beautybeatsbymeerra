@@ -248,16 +248,19 @@ export default function Billing() {
                <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{val.customer?.phone || '—'}</p>
              </div>
           )},
-          { key: 'service', label: 'Service', render: (val: any) => (
-             <div>
-               <p style={{ fontWeight: 700, fontSize: '13px' }}>
-                 {val.appointment?.service?.name || val.items?.[0]?.name || '—'}
-               </p>
-               {val.appointment?.staff?.name && (
-                 <p style={{ fontSize: '10px', color: 'var(--text-muted)' }}>by {val.appointment.staff.name}</p>
-               )}
-             </div>
-          )},
+          { key: 'service', label: 'Service / Items', render: (val: any) => {
+             const servicesText = val.appointment?.services?.map((s: any) => s.name).join(', ') || val.items?.map((i: any) => i.name).join(', ') || '—';
+             return (
+               <div>
+                 <p style={{ fontWeight: 700, fontSize: '13px' }}>
+                   {servicesText}
+                 </p>
+                 {val.appointment?.staff?.name && (
+                   <p style={{ fontSize: '10px', color: 'var(--text-muted)' }}>by {val.appointment.staff.name}</p>
+                 )}
+               </div>
+             );
+          }},
           { key: 'total', label: 'Amount', render: (val: any) => (
              <div>
                <span style={{ fontWeight: 900, fontSize: '1.1rem' }}>₹{val.total}</span>

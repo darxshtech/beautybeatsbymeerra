@@ -56,7 +56,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 md:gap-4">
           <Link href={user ? "/profile" : "/login"} className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors">
              <User className="w-5 h-5 text-gray-700" />
-             {!user && <span className="text-sm font-bold text-gray-700">Member Induction</span>}
+             {!user && <span className="text-sm font-bold text-gray-700">Account</span>}
           </Link>
           <Link href="/book" className="bg-primary text-white px-4 md:px-6 py-2 md:py-2.5 rounded-full font-bold text-xs md:text-sm shadow-lg shadow-red-100 hover:scale-105 transition-all text-nowrap">
             Book Now

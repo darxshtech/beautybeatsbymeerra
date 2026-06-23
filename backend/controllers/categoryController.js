@@ -25,7 +25,7 @@ exports.getCategories = async (req, res, next) => {
  */
 exports.createCategory = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, mainCategory } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: 'Category name is required' });
     }
@@ -36,7 +36,10 @@ exports.createCategory = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Category already exists' });
     }
 
-    const category = await Category.create({ name: name.trim() });
+    const category = await Category.create({ 
+      name: name.trim(),
+      mainCategory: mainCategory ? mainCategory.trim() : 'General'
+    });
     res.status(201).json({
       success: true,
       data: category

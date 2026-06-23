@@ -3,7 +3,8 @@ const Joi = require('joi');
 const appointmentValidator = {
   create: (data) => {
     const schema = Joi.object({
-      service: Joi.string().required(),
+      services: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).required(),
+      service: Joi.string().optional(),
       appointmentDate: Joi.date().required(),
       timeSlot: Joi.string().required(),
       notes: Joi.string().allow('', null),

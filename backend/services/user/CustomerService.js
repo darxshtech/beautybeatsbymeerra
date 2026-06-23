@@ -62,7 +62,7 @@ class CustomerService {
 
     // Get appointment history
     const history = await Appointment.find({ customer: id })
-      .populate('service', 'name price')
+      .populate('services', 'name price')
       .sort('-appointmentDate')
       .limit(10);
 

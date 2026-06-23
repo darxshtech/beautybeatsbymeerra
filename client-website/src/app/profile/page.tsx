@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const { user, loading, logout } = useAuth();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('My Appointments');
-  const [settingsForm, setSettingsForm] = useState({ name: '', phone: '' });
+  const [settingsForm, setSettingsForm] = useState({ name: '', phone: '', whatsappNumber: '' });
   const [skinForm, setSkinForm] = useState({ skinType: '', concerns: '', notes: '' });
   
   // Reschedule Modal States
@@ -38,7 +38,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setSettingsForm({ name: user.name || '', phone: user.phone || '' });
+      setSettingsForm({ name: user.name || '', phone: user.phone || '', whatsappNumber: user.whatsappNumber || '' });
       setSkinForm({ 
         skinType: user.skinToneInfo?.skinType || 'Normal', 
         concerns: user.skinToneInfo?.concerns?.join(', ') || '',
@@ -342,6 +342,15 @@ export default function ProfilePage() {
                            value={settingsForm.phone}
                            onChange={e => setSettingsForm({...settingsForm, phone: e.target.value})}
                            className="w-full mt-1 p-2 rounded-lg border font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-black uppercase text-gray-400 tracking-widest">WhatsApp Number (For Reminders)</label>
+                        <input 
+                           value={settingsForm.whatsappNumber}
+                           onChange={e => setSettingsForm({...settingsForm, whatsappNumber: e.target.value})}
+                           className="w-full mt-1 p-2 rounded-lg border font-bold"
+                           placeholder="+91..."
                         />
                       </div>
                     </div>

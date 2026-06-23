@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const AppointmentSchema = new mongoose.Schema({
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   staff: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional preferred staff
-  service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
+  services: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true }],
   appointmentDate: { type: Date, required: true },
   timeSlot: { type: String, required: true },
   status: { 

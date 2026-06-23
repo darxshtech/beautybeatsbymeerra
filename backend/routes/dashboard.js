@@ -10,7 +10,7 @@ const { protect, authorize } = require('../middleware/auth');
  */
 router.get('/stats', protect, authorize('ADMIN', 'STAFF'), async (req, res, next) => {
   try {
-    const response = await DashboardService.getDashboardStats();
+    const response = await DashboardService.getDashboardStats(req.branch);
     res.status(200).json(response);
   } catch (err) {
     next(err);

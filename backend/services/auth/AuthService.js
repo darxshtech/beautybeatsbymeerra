@@ -47,13 +47,13 @@ class AuthService {
     return response;
   }
 
-  async login(email, password) {
-    if (!email || !password) {
-      throw new ErrorResponse('Please provide an email and password', 400);
+  async login(identifier, password) {
+    if (!identifier || !password) {
+      throw new ErrorResponse('Please provide an identifier (email/phone) and password', 400);
     }
 
     // Check for hardcoded admin first (Induction Credentials from .env)
-    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+    if (identifier === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
        return this.sendTokenResponse({
          _id: 'SYSTEM_ADMIN_ID', // Pseudo ID
          name: 'System Admin',
@@ -62,18 +62,31 @@ class AuthService {
        });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email }).select('+password');
+    // Find user by email or phone
+    const user = await User.findOne({ 
+      $or: [{ email: identifier }, { phone: identifier }] 
+    }).select('+password');
 
     if (!user) {
       throw new ErrorResponse('Invalid credentials', 401);
     }
 
-    // Check if password matches
-    const isMatch = await user.comparePassword(password);
+    // If user has no password (e.g. walk-in customer), and they are logging in with their phone as password
+    if (!user.password) {
+      if (identifier === password || password === user.phone) {
+        // First time login for walk-in, let's set their password
+        user.password = password;
+        await user.save();
+      } else {
+        throw new ErrorResponse('Invalid credentials', 401);
+      }
+    } else {
+      // Check if password matches
+      const isMatch = await user.comparePassword(password);
 
-    if (!isMatch) {
-      throw new ErrorResponse('Invalid credentials', 401);
+      if (!isMatch) {
+        throw new ErrorResponse('Invalid credentials', 401);
+      }
     }
 
     return this.sendTokenResponse(user);
@@ -116,6 +129,7 @@ class AuthService {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role

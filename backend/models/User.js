@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, sparse: true },
   password: { type: String },
   phone: { type: String, sparse: true, unique: true }, // Changed from required: true to sparse: true
+  whatsappNumber: { type: String },
   role: { type: String, enum: ['ADMIN', 'STAFF', 'CUSTOMER'], default: 'CUSTOMER' },
   googleId: { type: String, sparse: true },
   isProfileComplete: { type: Boolean, default: true },

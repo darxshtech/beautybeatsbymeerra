@@ -21,7 +21,9 @@ import {
   MessageSquare,
   Clock,
   Store,
-  X
+  X,
+  Image as ImageIcon,
+  Wallet
 } from 'lucide-react';
 import styles from '@/styles/layout/Sidebar.module.css';
 
@@ -33,6 +35,7 @@ const adminMenuItems = [
   { icon: CalendarDays, label: 'Appointments', href: '/appointments' },
   { icon: Package, label: 'Services', href: '/services' },
   { icon: Receipt, label: 'Billing', href: '/billing' },
+  { icon: Wallet, label: 'Transactions', href: '/transactions' },
   { icon: UserCheck, label: 'Employees', href: '/employees' },
   { icon: Clock, label: 'Attendance Logs', href: '/attendance-logs' },
   { icon: BarChart3, label: 'Inventory', href: '/inventory' },
@@ -41,6 +44,7 @@ const adminMenuItems = [
   { icon: MessageSquare, label: 'Message Formats', href: '/message-formats' },
   { icon: BarChart3, label: 'Reports', href: '/reports' },
   { icon: CreditCard, label: 'Subscriptions', href: '/subscriptions' },
+  { icon: ImageIcon, label: 'Website Content', href: '/content' },
 ];
 
 const staffMenuItems = [

@@ -24,6 +24,11 @@ class BillingService {
   async createInvoice(data) {
     const { customer, items, subtotal, discount, total, paymentMethod, appointment, paymentStatus } = data;
 
+    let finalPaymentStatus = paymentStatus;
+    if (!finalPaymentStatus) {
+      finalPaymentStatus = (paymentMethod === 'CASH') ? 'PENDING' : 'PAID';
+    }
+
     const invoice = await Billing.create({
       customer,
       items,
@@ -32,11 +37,11 @@ class BillingService {
       total,
       paymentMethod, // CASH, CARD, UPI, CREDIT
       appointment,
-      paymentStatus: paymentStatus || 'PAID'
+      paymentStatus: finalPaymentStatus
     });
 
     // Reward loyalty points (1 point per booking as requested)
-    if (paymentStatus === 'PAID') {
+    if (finalPaymentStatus === 'PAID') {
       const points = 1;
       User.findByIdAndUpdate(customer, {
         $inc: { loyaltyPoints: points }

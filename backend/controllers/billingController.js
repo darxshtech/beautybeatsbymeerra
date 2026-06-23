@@ -20,7 +20,7 @@ exports.getBills = async (req, res, next) => {
       .populate({
         path: 'appointment',
         populate: [
-          { path: 'service', select: 'name category price duration' },
+          { path: 'services', select: 'name category price duration' },
           { path: 'staff', select: 'name' }
         ]
       })
@@ -53,7 +53,7 @@ exports.getBillById = async (req, res, next) => {
       .populate({
         path: 'appointment',
         populate: [
-          { path: 'service', select: 'name category price duration' },
+          { path: 'services', select: 'name category price duration' },
           { path: 'staff', select: 'name' }
         ]
       });
@@ -107,7 +107,7 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       .populate('customer', 'name phone')
       .populate({
         path: 'appointment',
-        populate: { path: 'service', select: 'name price' }
+        populate: { path: 'services', select: 'name price' }
       });
 
     if (!bill) {
@@ -174,7 +174,7 @@ exports.generateCustomerHistoryPDF = async (req, res, next) => {
     const bills = await Billing.find({ customer: req.params.id })
       .populate({
         path: 'appointment',
-        populate: { path: 'service', select: 'name price' }
+        populate: { path: 'services', select: 'name price' }
       })
       .sort('createdAt');
 

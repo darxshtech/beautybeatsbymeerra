@@ -19,11 +19,31 @@ export default function Customers() {
     name: '',
     email: '',
     phone: '',
+    whatsappNumber: '',
     address: '',
     dateOfBirth: '',
     subscriptionPlan: 'NONE',
     subscriptionStatus: 'INACTIVE'
   });
+  const [viewingCustomer, setViewingCustomer] = useState<any>(null);
+  const [customerHistory, setCustomerHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const handleViewHistory = async (customer: any) => {
+    setViewingCustomer(customer);
+    setLoadingHistory(true);
+    setCustomerHistory([]);
+    try {
+      const res = await apiRequest(`/appointments?customerId=${customer._id}`);
+      if (res.success) {
+        setCustomerHistory(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -50,6 +70,7 @@ export default function Customers() {
         name: customer.name || '',
         email: customer.email || '',
         phone: customer.phone || '',
+        whatsappNumber: customer.whatsappNumber || '',
         address: customer.address || '',
         dateOfBirth: bday ? new Date(bday).toISOString().split('T')[0] : '',
         subscriptionPlan: customer.subscription?.planName || 'NONE',
@@ -57,7 +78,7 @@ export default function Customers() {
       });
     } else {
       setEditingCustomer(null);
-      setFormData({ name: '', email: '', phone: '', address: '', dateOfBirth: '', subscriptionPlan: 'NONE', subscriptionStatus: 'INACTIVE' });
+      setFormData({ name: '', email: '', phone: '', whatsappNumber: '', address: '', dateOfBirth: '', subscriptionPlan: 'NONE', subscriptionStatus: 'INACTIVE' });
     }
     setIsModalOpen(true);
   };
@@ -202,7 +223,7 @@ export default function Customers() {
           )},
           { key: 'actions', label: 'Operations', render: (val) => (
              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className={styles.pageBtn} style={{ padding: '6px' }} title="Full History">
+                <button className={styles.pageBtn} style={{ padding: '6px' }} title="Full History" onClick={() => handleViewHistory(val)}>
                    <FileText size={18} />
                 </button>
                 <button 
@@ -221,7 +242,7 @@ export default function Customers() {
                 >
                    <Trash2 size={18} />
                 </button>
-                <button className={styles.pageBtn} style={{ padding: '6px', background: 'var(--primary)', color: 'white', border: 'none' }} title="View Profile">
+                <button className={styles.pageBtn} style={{ padding: '6px', background: 'var(--primary)', color: 'white', border: 'none' }} title="View Profile" onClick={() => handleViewHistory(val)}>
                    <ChevronRight size={18} />
                 </button>
              </div>
@@ -269,6 +290,15 @@ export default function Customers() {
               value={formData.phone}
               onChange={e => setFormData({...formData, phone: e.target.value})}
               placeholder="+91 9876543210"
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>WhatsApp Number</label>
+            <input 
+              className={styles.input}
+              value={formData.whatsappNumber}
+              onChange={e => setFormData({...formData, whatsappNumber: e.target.value})}
+              placeholder="+91..."
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -337,6 +367,59 @@ export default function Customers() {
             {editingCustomer ? 'Update Customer' : 'Enroll Member'}
           </button>
         </form>
+      </Modal>
+
+      <Modal 
+        isOpen={!!viewingCustomer} 
+        onClose={() => setViewingCustomer(null)} 
+        title="Client History"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '60vh', overflowY: 'auto' }}>
+           {viewingCustomer && (
+             <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800 }}>{viewingCustomer.name}</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{viewingCustomer.phone} | {viewingCustomer.email}</p>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '12px' }}>
+                   <div style={{ padding: '8px 12px', background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', borderRadius: '8px', fontWeight: 700, fontSize: '12px' }}>
+                      Loyalty: {viewingCustomer.loyaltyPoints || 0}
+                   </div>
+                   <div style={{ padding: '8px 12px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF', borderRadius: '8px', fontWeight: 700, fontSize: '12px' }}>
+                      Visits: {customerHistory.length}
+                   </div>
+                </div>
+             </div>
+           )}
+
+           <h4 style={{ fontWeight: 800, fontSize: '16px', marginTop: '8px' }}>Appointment History</h4>
+           
+           {loadingHistory ? (
+             <p style={{ color: 'var(--text-muted)' }}>Loading history...</p>
+           ) : customerHistory.length === 0 ? (
+             <p style={{ color: 'var(--text-muted)' }}>No past appointments found.</p>
+           ) : (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+               {customerHistory.map((appt: any) => (
+                 <div key={appt._id} style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <span style={{ fontWeight: 800 }}>{new Date(appt.appointmentDate).toLocaleDateString()} at {appt.timeSlot}</span>
+                       <span style={{ 
+                         background: appt.status === 'COMPLETED' ? 'rgba(52,199,89,0.1)' : appt.status === 'CANCELLED' ? 'rgba(255,59,48,0.1)' : 'rgba(255,149,0,0.1)',
+                         color: appt.status === 'COMPLETED' ? '#34C759' : appt.status === 'CANCELLED' ? '#FF3B30' : '#FF9500',
+                         padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 800
+                       }}>
+                         {appt.status}
+                       </span>
+                    </div>
+                    <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                       <p><strong>Services:</strong> {appt.services?.map((s:any) => s.name).join(', ') || 'N/A'}</p>
+                       <p><strong>Staff:</strong> {appt.staff?.name || 'Any'}</p>
+                       <p><strong>Total:</strong> ₹{appt.billing?.total || appt.services?.reduce((acc: number, s: any) => acc + (s.price || 0), 0) || 0} ({appt.billing?.paymentStatus || 'N/A'})</p>
+                    </div>
+                 </div>
+               ))}
+             </div>
+           )}
+        </div>
       </Modal>
     </div>
   );

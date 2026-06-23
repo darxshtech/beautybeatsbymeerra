@@ -29,7 +29,7 @@ exports.createConsentForm = async (req, res, next) => {
     // Validate appointment exists
     const appointment = await Appointment.findById(appointmentId)
       .populate('customer', 'name phone')
-      .populate('service', 'name')
+      .populate('services', 'name')
       .populate('staff', 'name');
 
     if (!appointment) {

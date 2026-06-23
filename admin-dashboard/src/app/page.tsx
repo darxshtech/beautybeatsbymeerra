@@ -176,6 +176,46 @@ export default function Dashboard() {
               )}
            </div>
         </div>
+       </section>
+
+      <section className={styles.chartsGrid} style={{ marginTop: '1.5rem', gridTemplateColumns: '1fr' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <header className={styles.sectionHeader} style={{ marginBottom: '0.5rem' }}>
+             <h3 className={styles.subtitle} style={{ fontWeight: 700, fontSize: '1.1rem' }}>Recent Transactions</h3>
+          </header>
+          
+          {data?.recentTransactions?.length > 0 ? (
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <Table 
+                 columns={[
+                   { key: 'customer', label: 'Customer' },
+                   { key: 'amount', label: 'Amount', render: (val) => <span style={{ fontWeight: 900 }}>₹{val.amount}</span> },
+                   { key: 'method', label: 'Method', render: (val) => (
+                     <span style={{ 
+                       fontWeight: 800, 
+                       color: val.method === 'CASH' ? '#FF9500' : '#007AFF' 
+                     }}>{val.method}</span>
+                   )},
+                   { key: 'status', label: 'Status', render: (val) => (
+                     <span style={{ 
+                       background: val.status === 'PAID' ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 59, 48, 0.1)',
+                       color: val.status === 'PAID' ? '#34C759' : '#FF3B30',
+                       padding: '4px 12px',
+                       borderRadius: '12px',
+                       fontSize: '12px',
+                       fontWeight: 700
+                     }}>{val.status}</span>
+                   )}
+                 ]}
+                 data={data.recentTransactions}
+              />
+            </div>
+          ) : (
+            <div className={cardStyles.card} style={{ padding: '2rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)' }}>No recent transactions found.</p>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

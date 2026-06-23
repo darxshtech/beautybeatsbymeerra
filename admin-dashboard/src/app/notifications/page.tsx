@@ -22,6 +22,14 @@ export default function Notifications() {
   
   const [activeTab, setActiveTab] = useState('SYSTEM');
   
+  // Broadcast State
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastData, setBroadcastData] = useState({
+    message: '',
+    target: 'ALL'
+  });
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  
   // WhatsApp Outbox State
   const [history, setHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -107,6 +115,32 @@ export default function Notifications() {
     }
   };
 
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastData.message) return alert("Message cannot be empty");
+    if (!confirm('This will send a WhatsApp message to ' + broadcastData.target + ' customers. Continue?')) return;
+    
+    setSendingBroadcast(true);
+    try {
+      const res = await apiRequest('/notifications/broadcast', {
+        method: 'POST',
+        body: broadcastData
+      });
+      if (res.success) {
+        alert('✅ Broadcast sent successfully');
+        setIsBroadcastModalOpen(false);
+        setBroadcastData({ message: '', target: 'ALL' });
+        if (showHistory) fetchHistory();
+      } else {
+        alert(`❌ ${res.message || 'Failed to broadcast'}`);
+      }
+    } catch (err: any) {
+      alert(`❌ Failed: ${err.message || 'Network error'}`);
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.sectionHeader} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -148,6 +182,16 @@ export default function Notifications() {
               }}
             >
               <Send size={16} /> {sendingAll ? 'Sending...' : 'Send All Now'}
+            </button>
+            <button 
+              onClick={() => setIsBroadcastModalOpen(true)}
+              style={{ 
+                background: 'var(--primary)', border: 'none', color: 'white',
+                padding: '10px 20px', borderRadius: '12px', fontWeight: 700, fontSize: '13px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+              }}
+            >
+              <MessageCircle size={16} /> New Broadcast
             </button>
           </div>
         )}
@@ -364,6 +408,45 @@ export default function Notifications() {
             </div>
           )}
         </>
+      )}
+
+      {/* Broadcast Modal */}
+      {isBroadcastModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div className={cardStyles.card} style={{ width: '100%', maxWidth: '500px', padding: '24px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '16px' }}>Send WhatsApp Broadcast</h3>
+            <form onSubmit={handleSendBroadcast} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontWeight: 700, fontSize: '14px' }}>Target Audience</label>
+                <select 
+                  value={broadcastData.target}
+                  onChange={(e) => setBroadcastData({...broadcastData, target: e.target.value})}
+                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)' }}
+                >
+                  <option value="ALL">All Customers</option>
+                  <option value="VIP">VIP Customers Only</option>
+                  <option value="UPCOMING">Customers with Upcoming Appointments</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontWeight: 700, fontSize: '14px' }}>Message</label>
+                <textarea 
+                  value={broadcastData.message}
+                  onChange={(e) => setBroadcastData({...broadcastData, message: e.target.value})}
+                  placeholder="Enter your promotional or event message here..."
+                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', minHeight: '120px', resize: 'vertical' }}
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" onClick={() => setIsBroadcastModalOpen(false)} style={{ padding: '10px 20px', background: 'var(--bg-main)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" disabled={sendingBroadcast} style={{ padding: '10px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', opacity: sendingBroadcast ? 0.7 : 1 }}>
+                  {sendingBroadcast ? 'Sending...' : 'Send Broadcast'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

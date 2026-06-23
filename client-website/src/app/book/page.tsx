@@ -24,7 +24,7 @@ import apiClient from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const steps = ['Category', 'Service', 'Schedule', 'Details', 'Payment', 'Confirm'];
+const steps = ['Type', 'Category', 'Services', 'Schedule', 'Details', 'Payment', 'Confirm'];
 
 const fallbackBookingServices = [
   { _id: 'fb-1', name: 'Haircut & Styling', price: 150, category: 'Hair', duration: 45 },
@@ -45,13 +45,14 @@ export default function BookingPage() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>(fallbackBookingServices);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeMainCategory, setActiveMainCategory] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string>("");
   const [categories, setCategories] = useState<any[]>([]);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
   const [staff, setStaff] = useState<any[]>(fallbackStaff);
   const [selectedStaff, setSelectedStaff] = useState<string>("");
   const [step, setStep] = useState(0);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedServices, setSelectedServices] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [name, setName] = useState("");
@@ -68,6 +69,15 @@ export default function BookingPage() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [redeemPoints, setRedeemPoints] = useState(false);
+
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      alert("You need an account to book an appointment.");
+      router.push('/login?redirect=/book');
+    }
+  }, [user, authLoading, router]);
 
   const nextStep = () => setStep(s => Math.min(s + 1, steps.length - 1));
   const prevStep = () => setStep(s => Math.max(s - 1, 0));
@@ -111,10 +121,11 @@ export default function BookingPage() {
 
   useEffect(() => {
     const fetchAvailability = async () => {
-      if (!selectedDate) return;
+      if (!selectedDate || selectedServices.length === 0) return;
       setLoadingSlots(true);
+      const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration, 0);
       try {
-        const res = await apiClient.get(`/appointments/availability?date=${selectedDate}&staffId=${selectedStaff}`);
+        const res = await apiClient.get(`/appointments/availability?date=${selectedDate}&staffId=${selectedStaff}&duration=${totalDuration}`);
         if (res.data.success) {
           setAvailableSlots(res.data.data);
         }
@@ -127,7 +138,7 @@ export default function BookingPage() {
     fetchAvailability();
   }, [selectedDate, selectedStaff]);
 
-  const { user } = useAuth();
+
   
   useEffect(() => {
     if (user) {
@@ -147,7 +158,7 @@ export default function BookingPage() {
     setError("");
     try {
       const res = await apiClient.post('/appointments', {
-        service: selectedService?._id,
+        services: selectedServices.map(s => s._id),
         appointmentDate: selectedDate,
         timeSlot: selectedTime,
         staff: selectedStaff,
@@ -172,6 +183,8 @@ export default function BookingPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading || !user) return <div className="max-w-4xl mx-auto px-6 py-20 min-h-screen text-center text-xl font-bold text-gray-400">Please log in to book...</div>;
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 min-h-screen">
@@ -207,23 +220,23 @@ export default function BookingPage() {
           {step === 0 && (
             <div className="space-y-8">
               <div className="text-center mb-12">
-                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Category</h2>
-                 <p className="text-gray-500">Choose a category of treatment.</p>
+                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Type</h2>
+                 <p className="text-gray-500">What kind of treatment are you looking for?</p>
               </div>
               {(() => {
-                const displayCategories = isUsingFallback
-                  ? Array.from(new Set(services.map(s => s.category).filter(Boolean)))
-                  : categories.map(c => c.name);
+                const displayMainCategories = isUsingFallback
+                  ? ['Hair', 'Skin', 'Bridal']
+                  : Array.from(new Set(categories.map(c => c.mainCategory || 'General')));
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {displayCategories.map(cat => (
+                    {displayMainCategories.map(cat => (
                       <button
                         key={cat}
-                        onClick={() => { setActiveCategory(cat); nextStep(); }}
+                        onClick={() => { setActiveMainCategory(cat); nextStep(); }}
                         className={cn(
                           "p-8 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
-                          activeCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
+                          activeMainCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
                         )}
                       >
                         <h3 className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors uppercase tracking-widest">{cat}</h3>
@@ -242,8 +255,45 @@ export default function BookingPage() {
                    <ChevronLeft className="w-6 h-6 text-gray-600" />
                 </button>
                 <div>
-                   <h2 className="text-4xl font-black text-gray-900 mb-2">Select Service</h2>
-                   <p className="text-gray-500">Choose a service from {activeCategory}.</p>
+                   <h2 className="text-4xl font-black text-gray-900 mb-2">Select Category</h2>
+                   <p className="text-gray-500">Choose a specific category from {activeMainCategory}.</p>
+                </div>
+              </div>
+              {(() => {
+                const displayCategories = isUsingFallback
+                  ? Array.from(new Set(services.map(s => s.category).filter(Boolean)))
+                  : categories.filter(c => (c.mainCategory || 'General') === activeMainCategory).map(c => c.name);
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {displayCategories.length === 0 && <div className="col-span-2 text-center text-gray-400 font-bold">No categories found.</div>}
+                    {displayCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => { setActiveCategory(cat); nextStep(); }}
+                        className={cn(
+                          "p-8 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
+                          activeCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
+                        )}
+                      >
+                        <h3 className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors uppercase tracking-widest">{cat}</h3>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-8">
+              <div className="flex items-center gap-4 mb-8">
+                <button onClick={prevStep} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
+                   <ChevronLeft className="w-6 h-6 text-gray-600" />
+                </button>
+                <div>
+                   <h2 className="text-4xl font-black text-gray-900 mb-2">Select Services</h2>
+                   <p className="text-gray-500">You can choose multiple services.</p>
                 </div>
               </div>
               {(() => {
@@ -252,39 +302,68 @@ export default function BookingPage() {
                   : services.filter(s => s.category?.toLowerCase() === activeCategory.toLowerCase());
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {filteredServices.length === 0 ? (
-                       <div className="col-span-1 md:col-span-2 text-center py-12 text-gray-400 font-bold">
-                         No services found in this category.
-                       </div>
-                     ) : (
-                       filteredServices.map(s => (
-                         <button
-                          key={s._id}
-                          onClick={() => { setSelectedService(s); nextStep(); }}
-                          className={cn(
-                            "p-6 rounded-3xl border-2 text-left transition-all hover:bg-red-50 group",
-                            selectedService?._id === s._id ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
-                          )}
-                         >
-                           <div className="flex justify-between items-start">
-                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary mb-4 shadow-sm">
-                                 <Scissors className="w-6 h-6" />
-                              </div>
-                              <p className="text-2xl font-black text-primary">₹{s.price}</p>
-                           </div>
-                           <h3 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors">{s.name}</h3>
-                           <p className="text-sm text-gray-500 font-bold">{s.category} • {s.duration}m</p>
-                         </button>
-                       ))
-                     )}
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {filteredServices.length === 0 ? (
+                         <div className="col-span-1 md:col-span-2 text-center py-12 text-gray-400 font-bold">
+                           No services found in this category.
+                         </div>
+                       ) : (
+                         filteredServices.map(s => {
+                           const isSelected = selectedServices.some(sel => sel._id === s._id);
+                           return (
+                             <button
+                              key={s._id}
+                              onClick={() => { 
+                                if (isSelected) {
+                                  setSelectedServices(prev => prev.filter(sel => sel._id !== s._id));
+                                } else {
+                                  setSelectedServices(prev => [...prev, s]);
+                                }
+                              }}
+                              className={cn(
+                                "p-6 rounded-3xl border-2 text-left transition-all hover:bg-red-50 group relative overflow-hidden",
+                                isSelected ? "border-primary bg-red-50/50 shadow-sm" : "border-gray-50 bg-gray-50/30"
+                              )}
+                             >
+                               <div className="flex justify-between items-start relative z-10">
+                                  <div className={cn(
+                                    "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-colors",
+                                    isSelected ? "bg-primary text-white" : "bg-white text-primary"
+                                  )}>
+                                     {isSelected ? <CheckCircle2 className="w-6 h-6" /> : <Scissors className="w-6 h-6" />}
+                                  </div>
+                                  <p className="text-2xl font-black text-primary">₹{s.price}</p>
+                               </div>
+                               <h3 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors relative z-10">{s.name}</h3>
+                               <p className="text-sm text-gray-500 font-bold relative z-10">{s.category} • {s.duration}m</p>
+                               {isSelected && <div className="absolute inset-0 bg-red-50/20 pointer-events-none" />}
+                             </button>
+                           );
+                         })
+                       )}
+                    </div>
+                    {selectedServices.length > 0 && (
+                      <div className="flex justify-between pt-4 border-t border-gray-100">
+                        <div className="text-left">
+                          <p className="text-xs font-black uppercase text-gray-400">Total Services: {selectedServices.length}</p>
+                          <p className="text-2xl font-black text-primary">₹{selectedServices.reduce((sum, s) => sum + s.price, 0)}</p>
+                        </div>
+                        <button 
+                          onClick={nextStep} 
+                          className="px-8 py-3 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center gap-2"
+                        >
+                          Continue to Schedule <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-8">
                <div className="text-center mb-12">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Build Your Schedule</h2>
@@ -423,7 +502,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-8">
               <div className="text-center mb-12">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Final Details</h2>
@@ -490,7 +569,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
              <div className="space-y-8">
                 <div className="text-center mb-12">
                    <h2 className="text-4xl font-black text-gray-900 mb-2">Secure Checkout</h2>
@@ -498,7 +577,7 @@ export default function BookingPage() {
                 </div>
 
                 {(() => {
-                  const totalAmount = Math.max(0, (selectedService?.price || 0) - discount - (redeemPoints ? ((user?.loyaltyPoints || 0) * 10) : 0));
+                  const totalAmount = Math.max(0, selectedServices.reduce((sum, s) => sum + s.price, 0) - discount - (redeemPoints ? ((user?.loyaltyPoints || 0) * 10) : 0));
                   const qrData = encodeURIComponent(`upi://pay?pa=beautybeats320-3@okaxis&pn=BeautyBeats&am=${totalAmount}&cu=INR`);
 
                   return (
@@ -563,8 +642,8 @@ export default function BookingPage() {
                       <h4 className="text-xs font-black uppercase tracking-widest text-primary">Order Summary</h4>
                       <div className="space-y-3">
                          <div className="flex justify-between text-sm font-bold">
-                            <span className="text-gray-600">{selectedService?.name}</span>
-                            <span>₹{selectedService?.price}</span>
+                            <span className="text-gray-600">{selectedServices.map(s => s.name).join(', ')}</span>
+                            <span>₹{selectedServices.reduce((sum, s) => sum + s.price, 0)}</span>
                          </div>
                          {discount > 0 && (
                            <div className="flex justify-between text-sm font-bold text-green-600">
@@ -634,7 +713,7 @@ export default function BookingPage() {
                                 if (res.data.success) {
                                   setCouponData(res.data.data);
                                   const disc = res.data.data.discountType === 'PERCENTAGE'
-                                    ? Math.round((selectedService?.price * res.data.data.discountValue) / 100)
+                                    ? Math.round((selectedServices.reduce((sum, s) => sum + s.price, 0) * res.data.data.discountValue) / 100)
                                     : res.data.data.discountValue;
                                   setDiscount(disc);
                                 }
@@ -682,7 +761,7 @@ export default function BookingPage() {
              </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="text-center py-12 space-y-8">
                <motion.div 
                  initial={{ scale: 0 }}
@@ -692,8 +771,14 @@ export default function BookingPage() {
                  <CheckCircle2 className="w-12 h-12" />
                </motion.div>
                <div>
-                  <h2 className="text-4xl font-black text-gray-900 mb-4">Payment Success!</h2>
-                  <p className="text-gray-500 text-lg">Your appointment and invoice have been finalized.</p>
+                  <h2 className="text-4xl font-black text-gray-900 mb-4">
+                    {paymentMethod === "CASH" ? "Booking Confirmed!" : "Payment Success!"}
+                  </h2>
+                  <p className="text-gray-500 text-lg">
+                    {paymentMethod === "CASH" 
+                      ? "Your appointment has been successfully booked. Pay at salon on arrival."
+                      : "Your appointment and invoice have been finalized."}
+                  </p>
                </div>
                
                <div className="max-w-xs mx-auto p-6 bg-gray-50 rounded-3xl space-y-4 border border-gray-100">
@@ -703,11 +788,13 @@ export default function BookingPage() {
                   </div>
                   <div className="flex justify-between text-sm font-bold">
                      <span className="text-gray-400">Status</span>
-                     <span className="text-green-600 uppercase italic">Paid</span>
+                     <span className={cn("uppercase italic", paymentMethod === "CASH" ? "text-amber-600" : "text-green-600")}>
+                        {paymentMethod === "CASH" ? "Pending (Pay at Salon)" : "Paid"}
+                     </span>
                   </div>
                   <div className="flex justify-between text-sm font-bold">
                      <span className="text-gray-400">Amount</span>
-                     <span className="text-gray-900 font-black">₹{selectedService?.price}</span>
+                     <span className="text-gray-900 font-black">₹{selectedServices.reduce((sum, s) => sum + s.price, 0)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold">
                      <span className="text-gray-400">Specialist</span>

@@ -54,6 +54,7 @@ const fallbackServices = [
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [services, setServices] = useState<any[]>(fallbackServices);
+  const [heroSlides, setHeroSlides] = useState<any[]>(slides);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -66,13 +67,33 @@ export default function HomePage() {
         // Use fallback services silently
       }
     };
+    
+    const fetchContent = async () => {
+      try {
+         const res = await fetch(`${API_URL}/website-content?branch=SALON&type=HERO_SLIDE&isActive=true`);
+         const json = await res.json();
+         if (json.success && json.data?.length > 0) {
+            setHeroSlides(json.data.map((item: any) => {
+               const isVideo = item.imageUrl?.endsWith('.mp4') || item.imageUrl?.endsWith('.webm') || item.imageUrl?.includes('/video/upload/');
+               return {
+                  title: item.title || "BeautyBeats",
+                  highlight: item.subtitle || "Premium Salon",
+                  desc: "Experience beauty with technology.",
+                  ...(isVideo ? { video: item.imageUrl } : { img: item.imageUrl })
+               };
+            }));
+         }
+      } catch (err) {}
+    };
+
     fetchServices();
+    fetchContent();
 
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % (heroSlides.length || 1));
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
@@ -95,11 +116,11 @@ export default function HomePage() {
               The Premium Salon Experience
             </div>
             <h1 className="text-5xl md:text-8xl font-black text-gray-900 leading-[0.95] tracking-tighter mb-8">
-              {slides[currentSlide].title} <br />
-              <span className="text-gradient leading-tight">{slides[currentSlide].highlight}</span>
+              {heroSlides[currentSlide]?.title} <br />
+              <span className="text-gradient leading-tight">{heroSlides[currentSlide]?.highlight}</span>
             </h1>
             <p className="text-xl text-gray-600 mb-10 max-w-lg leading-relaxed font-medium">
-              {slides[currentSlide].desc}
+              {heroSlides[currentSlide]?.desc}
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link href="/book" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-full font-black text-lg shadow-2xl shadow-red-200 hover:scale-105 transition-all flex items-center justify-center gap-2">
@@ -133,10 +154,10 @@ export default function HomePage() {
             className="relative"
           >
             <div className="aspect-square bg-slate-100 rounded-[60px] relative overflow-hidden shadow-2xl premium-shadow">
-               {slides[currentSlide].video ? (
+               {heroSlides[currentSlide]?.video ? (
                  <video
                    ref={heroVideoRef}
-                   src={slides[currentSlide].video}
+                   src={heroSlides[currentSlide]?.video}
                    autoPlay
                    muted
                    loop
@@ -144,7 +165,7 @@ export default function HomePage() {
                    className="absolute inset-0 w-full h-full object-cover"
                  />
                ) : (
-                 <img src={slides[currentSlide].img} alt="Salon Hero" className="absolute inset-0 w-full h-full object-cover" />
+                 <img src={heroSlides[currentSlide]?.img} alt="Salon Hero" className="absolute inset-0 w-full h-full object-cover" />
                )}
                <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 to-transparent" />
             </div>
@@ -182,7 +203,7 @@ export default function HomePage() {
                 className="bg-white rounded-[40px] shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col items-center group overflow-hidden"
               >
                 <div className="w-full h-48 relative overflow-hidden">
-                   <img src={`/images/${s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up') ? 'skin' : s.category?.toLowerCase().includes('hair') ? 'hair' : 'bridal'}.png`} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                   <img src={s.imageUrl || `/images/${s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up') ? 'skin' : s.category?.toLowerCase().includes('hair') ? 'hair' : 'bridal'}.png`} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                    <div className="absolute inset-0 bg-black/10" />
                 </div>
                 <div className="p-10 flex flex-col items-center">
