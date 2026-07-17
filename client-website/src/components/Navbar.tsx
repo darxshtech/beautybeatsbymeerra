@@ -37,7 +37,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-all">
-             <img src="/images/logo.jpeg" alt="BeautyBeats Logo" className="w-full h-full object-cover" />
+             <img src="https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312789/beauty_beats_salon/ccqu7nq9q04qaf5unxwm.jpg" alt="BeautyBeats Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 group-hover:text-primary transition-colors hidden xs:block">
             BeautyBeats

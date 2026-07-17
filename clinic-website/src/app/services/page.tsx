@@ -32,10 +32,10 @@ export default function ServicesPage() {
 
           const groupedCategories = availableCategories.map(catName => {
             const catImage = catName.toLowerCase().includes('skin') || catName.toLowerCase().includes('facial') || catName.toLowerCase().includes('clean up')
-              ? '/images/skin.png'
+              ? 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312821/beauty_beats_clinic/zx0ykriio0cbt5pv2llj.jpg'
               : catName.toLowerCase().includes('hair') || catName.toLowerCase().includes('keratin')
-                ? '/images/hair.png'
-                : '/images/bridal.png';
+                ? 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312799/beauty_beats_clinic/pkguaufcmgz8ljznwn1c.jpg'
+                : 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312798/beauty_beats_clinic/oganv6byz5djctiqhsur.jpg';
 
             return {
               category: catName,

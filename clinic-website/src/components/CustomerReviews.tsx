@@ -35,6 +35,19 @@ export default function CustomerReviews() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
+        // Try fetching visual CMS reviews first
+        const cmsRes = await axios.get(`${API}/website-content?type=CUSTOMER_REVIEW&isActive=true&branch=CLINIC`);
+        if (cmsRes.data.success && cmsRes.data.data.length > 0) {
+          const cmsReviews = cmsRes.data.data.map((r: any) => ({
+            name: r.title || 'Happy Client',
+            text: r.subtitle || 'Great experience at BeautyBeats!',
+            rating: 5,
+            service: 'Premium Service'
+          }));
+          setReviews(cmsReviews);
+          return; // Skip fallback if CMS has reviews
+        }
+
         const res = await axios.get(`${API}/feedback/public`);
         if (res.data.success && res.data.data.length > 0) {
           const apiReviews = res.data.data.map((r: any) => ({

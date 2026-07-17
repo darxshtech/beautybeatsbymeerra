@@ -119,36 +119,48 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Customer phone not found' });
     }
 
-    // Build a formatted bill message
+    // 1. Generate & Upload PDF Invoice to Cloudinary
+    const InvoicePdfService = require('../services/notification/InvoicePdfService');
+    const invoiceUrl = await InvoicePdfService.generateAndUploadInvoice(bill);
+
+    // Save PDF URL to Bill
+    bill.invoiceUrl = invoiceUrl;
+    await bill.save();
+
+    // 2. Automatically Send PDF to Customer's WhatsApp via Meta API
+    const WhatsappService = require('../services/notification/WhatsappService');
+    const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your invoice from ${bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats'}.`;
+    await WhatsappService.sendDocumentMessage(phone, invoiceUrl, `Invoice_${bill._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
+
+    // 3. Automatically Send Copy to Admin's WhatsApp
+    const adminPhone = process.env.ADMIN_PHONE;
+    if (adminPhone) {
+      const adminCaption = `Admin Copy: Invoice generated for ${bill.customer?.name || 'Customer'} (Total: ₹${bill.total}).`;
+      await WhatsappService.sendDocumentMessage(adminPhone, invoiceUrl, `INV_${bill._id.toString().substring(0, 8).toUpperCase()}_${(bill.customer?.name || 'Customer').replace(/\s/g, '_')}.pdf`, adminCaption);
+    }
+
+    // Build fallback manual redirect message
     const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
     const items = bill.items.map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
       `🧾 *${brandName} Invoice*`,
       ``,
       `Hi ${bill.customer?.name || 'Customer'},`,
-      `Thank you for your visit! Here's your bill summary:`,
+      `Thank you for your visit! Here's your invoice PDF: ${invoiceUrl}`,
       ``,
-      `*Invoice:* INV-${bill._id.toString().substring(0, 8).toUpperCase()}`,
-      `*Date:* ${new Date(bill.createdAt).toLocaleDateString('en-IN')}`,
-      ``,
-      `*Services:*`,
-      items,
-      ``,
-      `*Subtotal:* ₹${bill.subtotal}`,
-      bill.discount > 0 ? `*Discount:* -₹${bill.discount}` : '',
       `*Total Paid:* ₹${bill.total}`,
       `*Payment:* ${bill.paymentMethod}`,
       ``,
       `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
 
-    // Generate WhatsApp URL
     const whatsappUrl = `https://wa.me/91${phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(msg)}`;
 
     res.status(200).json({ 
       success: true, 
-      message: 'WhatsApp link generated',
+      message: 'WhatsApp invoice generated and sent successfully.',
       whatsappUrl,
+      invoiceUrl,
       formattedMessage: msg
     });
   } catch (err) {

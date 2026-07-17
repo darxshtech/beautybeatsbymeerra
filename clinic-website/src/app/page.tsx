@@ -29,19 +29,19 @@ const slides = [
     title: "Advanced Clinical",
     highlight: "Hydra Facials",
     desc: "Experience deep cleansing, extraction, and hydration with our signature medical-grade Hydra Facial treatments.",
-    img: "/images/skin.png"
+    img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312821/beauty_beats_clinic/zx0ykriio0cbt5pv2llj.jpg"
   },
   {
     title: "Revolutionary",
     highlight: "Skin Science",
     desc: "Elevate your skincare routine with dermatologically approved clinical procedures tailored for your unique skin type.",
-    img: "/images/hero.png"
+    img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312800/beauty_beats_clinic/iukcp792he1ehijo26o0.jpg"
   },
   {
     title: "Flawless &",
     highlight: "Radiant Glow",
     desc: "Achieve the glass-skin look with our premium peels and collagen-boosting therapies.",
-    img: "/images/before.png"
+    img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312797/beauty_beats_clinic/m66i0vwdql14yfwwanjf.jpg"
   }
 ];
 
@@ -134,19 +134,7 @@ export default function HomePage() {
                 Explore Services
               </Link>
             </div>
-            
-            <div className="mt-12 flex items-center gap-6">
-               <div className="flex -space-x-3">
-                 {[1,2,3,4].map(i => (
-                   <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src={`/images/hero.png`} className="w-full h-full object-cover" />
-                   </div>
-                 ))}
-               </div>
-               <p className="text-sm font-bold text-gray-500">
-                 <span className="text-gray-900">5k+</span> Happy Clients
-               </p>
-            </div>
+
           </motion.div>
 
           <motion.div 

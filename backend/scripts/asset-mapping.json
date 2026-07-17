@@ -1,0 +1,38 @@
+{
+  "salonMapping": {
+    "images/after.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312764/beauty_beats_salon/lw0s1qlql0az8gitrijr.jpg",
+    "images/ambience.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312765/beauty_beats_salon/ojae3womnaduzbflago7.jpg",
+    "images/before.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312766/beauty_beats_salon/abllehqs142uy8kn8kvj.jpg",
+    "images/bridal.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312767/beauty_beats_salon/buvwbb1jplilqjjfrahf.jpg",
+    "images/hair.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312769/beauty_beats_salon/ogzsz5nytmzqkevoq5oq.jpg",
+    "images/hero.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312769/beauty_beats_salon/yajqpkmi9d0ph2gpr3xd.jpg",
+    "images/hygiene.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312770/beauty_beats_salon/efrruuoahq1jozr9q5bs.jpg",
+    "images/IMG_4146.jpg": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312771/beauty_beats_salon/sjjwr1y6szqttjsyqtc3.jpg",
+    "images/IMG_5453.MOV": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312775/beauty_beats_salon/qyqsnsv1buhit0yhrodx.mov",
+    "images/IMG_5456.MOV": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312778/beauty_beats_salon/oygwe0uzztmrfhnmxt07.mov",
+    "images/IMG_5464.MOV": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312782/beauty_beats_salon/mryiaqssr3eg1amzysdg.mov",
+    "images/IMG_5471.MOV": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312784/beauty_beats_salon/y4cprgx0mydryoubk8jg.mov",
+    "images/IMG_5476.MOV": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312787/beauty_beats_salon/zl8sv3y0ygthdcyjer7k.mov",
+    "images/logo.jpeg": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312789/beauty_beats_salon/ccqu7nq9q04qaf5unxwm.jpg",
+    "images/skin.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312790/beauty_beats_salon/h3t6iyx59rjjjghzpg8w.jpg",
+    "images/staff.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312793/beauty_beats_salon/wnwb0v2ze3kcb6yzvh9s.jpg",
+    "images/waiting.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312794/beauty_beats_salon/eheczdwyiqqdiil4ileo.jpg"
+  },
+  "clinicMapping": {
+    "images/after.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312795/beauty_beats_clinic/pqxhzpkbdpumlkmnlzye.jpg",
+    "images/ambience.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312796/beauty_beats_clinic/ktsixoykvkxc1162cpww.jpg",
+    "images/before.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312797/beauty_beats_clinic/m66i0vwdql14yfwwanjf.jpg",
+    "images/bridal.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312798/beauty_beats_clinic/oganv6byz5djctiqhsur.jpg",
+    "images/hair.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312799/beauty_beats_clinic/pkguaufcmgz8ljznwn1c.jpg",
+    "images/hero.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312800/beauty_beats_clinic/iukcp792he1ehijo26o0.jpg",
+    "images/hygiene.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312801/beauty_beats_clinic/vv5zmcx8i4u4dyyggteg.jpg",
+    "images/logo.jpeg": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312818/beauty_beats_clinic/slvnisliku8ya8mhiyq3.jpg",
+    "images/skin.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312821/beauty_beats_clinic/zx0ykriio0cbt5pv2llj.jpg",
+    "images/staff.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312822/beauty_beats_clinic/g24fc8dgmghirwl3clxb.jpg",
+    "images/waiting.png": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312824/beauty_beats_clinic/rhzkmgczibcu9dbn3ark.jpg"
+  },
+  "globalMapping": {
+    "intro.mp4": "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4",
+    "logo.jpg": "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312890/beauty_beats_global/yld5fnzjwkbdurswmiv8.jpg"
+  }
+}

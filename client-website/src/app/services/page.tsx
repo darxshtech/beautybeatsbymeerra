@@ -9,7 +9,7 @@ import apiClient from '@/lib/api';
 const fallbackCategories = [
   {
     category: 'Hair',
-    img: '/images/hair.png',
+    img: 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312769/beauty_beats_salon/ogzsz5nytmzqkevoq5oq.jpg',
     items: [
       { name: 'Haircut & Styling', price: 150, duration: '45m', desc: 'Precision cuts and blowouts tailored to your face shape.' },
       { name: 'Hair Colouring', price: 500, duration: '90m', desc: 'Global, highlights, balayage and creative colour work.' },
@@ -18,7 +18,7 @@ const fallbackCategories = [
   },
   {
     category: 'Skin',
-    img: '/images/skin.png',
+    img: 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312790/beauty_beats_salon/h3t6iyx59rjjjghzpg8w.jpg',
     items: [
       { name: 'Hydra Facial', price: 800, duration: '60m', desc: 'Deep cleansing, exfoliation and hydration for radiant skin.' },
       { name: 'Chemical Peel', price: 600, duration: '45m', desc: 'Clinical-grade peels for pigmentation and acne scars.' },
@@ -27,7 +27,7 @@ const fallbackCategories = [
   },
   {
     category: 'Bridal',
-    img: '/images/bridal.png',
+    img: 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312767/beauty_beats_salon/buvwbb1jplilqjjfrahf.jpg',
     items: [
       { name: 'Bridal Makeup', price: 3500, duration: '180m', desc: 'Premium HD/Airbrush makeup for your special day.' },
       { name: 'Pre-Bridal Package', price: 5000, duration: '5 sessions', desc: 'Complete skin and hair prep starting 2 months before the wedding.' },
@@ -62,10 +62,10 @@ export default function ServicesPage() {
 
           const groupedCategories = availableCategories.map(catName => {
             const catImage = catName.toLowerCase().includes('skin') || catName.toLowerCase().includes('facial') || catName.toLowerCase().includes('clean up')
-              ? '/images/skin.png'
+              ? 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312790/beauty_beats_salon/h3t6iyx59rjjjghzpg8w.jpg'
               : catName.toLowerCase().includes('hair') || catName.toLowerCase().includes('keratin')
-                ? '/images/hair.png'
-                : '/images/bridal.png';
+                ? 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312769/beauty_beats_salon/ogzsz5nytmzqkevoq5oq.jpg'
+                : 'https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312767/beauty_beats_salon/buvwbb1jplilqjjfrahf.jpg';
 
             return {
               category: catName,

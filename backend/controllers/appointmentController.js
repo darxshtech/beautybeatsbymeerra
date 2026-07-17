@@ -428,33 +428,40 @@ exports.finishService = async (req, res, next) => {
       }
     });
 
-    // AUTO-SEND WHATSAPP BILL TO CUSTOMER
+    // AUTO-SEND WHATSAPP BILL TO CUSTOMER & ADMIN IN PDF
     try {
+      // Set populated customer on billing for PDF generation
+      billing.customer = appointment.customer;
+
+      const InvoicePdfService = require('../services/notification/InvoicePdfService');
       const WhatsappService = require('../services/notification/WhatsappService');
-      const billMsg = [
-        `🧾 *BeautyBeats Invoice*`,
-        ``,
-        `Hi ${appointment.customer?.name || 'Customer'},`,
-        `Thank you for your visit! Your service is complete.`,
-        ``,
-        `*Service:* ${sNames}`,
-        `*Amount Paid:* ₹${amount || totalServicePrice}`,
-        `*Payment Mode:* ${paymentMethod || 'CASH'}`,
-        `*Date:* ${new Date().toLocaleDateString('en-IN')}`,
-        ``,
-        `Hope you loved the experience! See you soon. ✨`,
-        `_BeautyBeats Premium Salon_`
-      ].join('\n');
+      
+      const invoiceUrl = await InvoicePdfService.generateAndUploadInvoice(billing);
 
-      if (appointment.customer?.phone) {
-        await WhatsappService.sendMessage(appointment.customer.phone, billMsg);
-        console.log(`Auto-bill sent to ${appointment.customer.phone}`);
+      // Save PDF URL
+      billing.invoiceUrl = invoiceUrl;
+      await billing.save();
 
-        // TRIGGER REVIEW REQUEST
+      const customerPhone = appointment.customer?.phone;
+      if (customerPhone) {
+        const customerCaption = `Hi ${appointment.customer?.name || 'Customer'}, thank you for your visit! Here is your invoice from ${appointment.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats'}.`;
+        await WhatsappService.sendDocumentMessage(customerPhone, invoiceUrl, `Invoice_${billing._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
+        console.log(`Auto-bill PDF sent to customer ${customerPhone}`);
+      }
+
+      const adminPhone = process.env.ADMIN_PHONE;
+      if (adminPhone) {
+        const adminCaption = `Admin Copy: Auto-generated invoice for checkout of ${appointment.customer?.name || 'Customer'} (Total: ₹${billing.total}).`;
+        await WhatsappService.sendDocumentMessage(adminPhone, invoiceUrl, `INV_${billing._id.toString().substring(0, 8).toUpperCase()}_${(appointment.customer?.name || 'Customer').replace(/\s/g, '_')}.pdf`, adminCaption);
+        console.log(`Auto-bill PDF copy sent to admin ${adminPhone}`);
+      }
+
+      // TRIGGER REVIEW REQUEST
+      if (customerPhone) {
         const NotificationService = require('../services/notification/NotificationService');
         const reviewLink = `http://localhost:3000/review?appId=${appointment._id}`;
         await NotificationService.triggerNotification('REVIEW_REQUEST', {
-          phone: appointment.customer.phone,
+          phone: customerPhone,
           customerName: appointment.customer.name,
           service: sNames,
           reviewLink,

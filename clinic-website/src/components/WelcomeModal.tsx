@@ -48,7 +48,7 @@ export default function WelcomeModal() {
                <div className="md:col-span-2 relative bg-black flex items-center justify-center overflow-hidden aspect-video md:aspect-auto">
                   <video 
                     className="absolute inset-0 w-full h-full object-cover"
-                    src="/intro.mp4"
+                    src="https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4"
                     title="Introduction Video"
                     autoPlay
                     muted

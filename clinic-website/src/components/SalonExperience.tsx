@@ -5,16 +5,16 @@ import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, Clock, Play, Users, ChevronRight } from 'lucide-react';
 
 const gallery = [
-  { img: "/images/ambience.png", title: "Luxury Ambience", desc: "A serene and sophisticated environment designed for your relaxation." },
-  { img: "/images/hygiene.png", title: "Clinical Hygiene", desc: "Highest standards of cleanliness and sterilized equipment for your safety." },
-  { img: "/images/waiting.png", title: "Premium Lounge", desc: "Relax in our comfortable waiting area with high-end hospitality." },
-  { img: "/images/staff.png", title: "Expert Care", desc: "Our professional staff values your time and provides personalized attention." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312796/beauty_beats_clinic/ktsixoykvkxc1162cpww.jpg", title: "Luxury Ambience", desc: "A serene and sophisticated environment designed for your relaxation." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312801/beauty_beats_clinic/vv5zmcx8i4u4dyyggteg.jpg", title: "Clinical Hygiene", desc: "Highest standards of cleanliness and sterilized equipment for your safety." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312824/beauty_beats_clinic/rhzkmgczibcu9dbn3ark.jpg", title: "Premium Lounge", desc: "Relax in our comfortable waiting area with high-end hospitality." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312822/beauty_beats_clinic/g24fc8dgmghirwl3clxb.jpg", title: "Expert Care", desc: "Our professional staff values your time and provides personalized attention." },
 ];
 
 const videoReviews = [
-  { id: 1, title: "Salon Tour", duration: "Premium Experience", url: "/intro.mp4" },
-  { id: 2, title: "Customer Story", duration: "Happy Transformation", url: "/intro.mp4" },
-  { id: 3, title: "Staff Magic", duration: "Expert Skills", url: "/intro.mp4" },
+  { id: 1, title: "Salon Tour", duration: "Premium Experience", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4" },
+  { id: 2, title: "Customer Story", duration: "Happy Transformation", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4" },
+  { id: 3, title: "Staff Magic", duration: "Expert Skills", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4" },
 ];
 
 function VideoCard({ v }: { v: typeof videoReviews[0] }) {

@@ -8,18 +8,18 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api';
 
 const fallbackGallery = [
-  { img: "/images/ambience.png", title: "Luxury Ambience", desc: "A serene and sophisticated environment designed for your relaxation." },
-  { img: "/images/hygiene.png", title: "Clinical Hygiene", desc: "Highest standards of cleanliness and sterilized equipment for your safety." },
-  { img: "/images/waiting.png", title: "Premium Lounge", desc: "Relax in our comfortable waiting area with high-end hospitality." },
-  { img: "/images/staff.png", title: "Expert Care", desc: "Our professional staff values your time and provides personalized attention." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312765/beauty_beats_salon/ojae3womnaduzbflago7.jpg", title: "Luxury Ambience", desc: "A serene and sophisticated environment designed for your relaxation." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312770/beauty_beats_salon/efrruuoahq1jozr9q5bs.jpg", title: "Clinical Hygiene", desc: "Highest standards of cleanliness and sterilized equipment for your safety." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312794/beauty_beats_salon/eheczdwyiqqdiil4ileo.jpg", title: "Premium Lounge", desc: "Relax in our comfortable waiting area with high-end hospitality." },
+  { img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312793/beauty_beats_salon/wnwb0v2ze3kcb6yzvh9s.jpg", title: "Expert Care", desc: "Our professional staff values your time and provides personalized attention." },
 ];
 
 const fallbackVideos = [
-  { id: 1, title: "Bridal Makeover", duration: "Premium Experience", url: "/images/IMG_5453.MOV" },
-  { id: 2, title: "Hair Styling", duration: "Expert Artistry", url: "/images/IMG_5456.MOV" },
-  { id: 3, title: "Nail & Lash Glamour", duration: "Signature Touch", url: "/images/IMG_5464.MOV" },
-  { id: 4, title: "Advanced Skin Care", duration: "Clinical Results", url: "/images/IMG_5471.MOV" },
-  { id: 5, title: "Hair Highlights", duration: "Trending Looks", url: "/images/IMG_5476.MOV" },
+  { id: 1, title: "Bridal Makeover", duration: "Premium Experience", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312775/beauty_beats_salon/qyqsnsv1buhit0yhrodx.mov" },
+  { id: 2, title: "Hair Styling", duration: "Expert Artistry", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312778/beauty_beats_salon/oygwe0uzztmrfhnmxt07.mov" },
+  { id: 3, title: "Nail & Lash Glamour", duration: "Signature Touch", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312782/beauty_beats_salon/mryiaqssr3eg1amzysdg.mov" },
+  { id: 4, title: "Advanced Skin Care", duration: "Clinical Results", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312784/beauty_beats_salon/y4cprgx0mydryoubk8jg.mov" },
+  { id: 5, title: "Hair Highlights", duration: "Trending Looks", url: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312787/beauty_beats_salon/zl8sv3y0ygthdcyjer7k.mov" },
 ];
 
 function VideoCard({ v }: { v: any }) {

@@ -54,12 +54,10 @@ exports.createContent = async (req, res, next) => {
     const { title, subtitle, type, branch, order, isActive } = req.body;
     let imageUrl = '';
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload an image' });
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      imageUrl = result.secure_url;
     }
-
-    const result = await uploadToCloudinary(req.file.buffer);
-    imageUrl = result.secure_url;
 
     const content = await WebsiteContent.create({
       title,

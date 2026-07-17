@@ -6,8 +6,8 @@ import { motion } from 'framer-motion';
 export default function BeforeAfter() {
   const [sliderPos, setSliderPos] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [beforeImg, setBeforeImg] = useState('/images/before.png');
-  const [afterImg, setAfterImg] = useState('/images/after.png');
+  const [beforeImg, setBeforeImg] = useState('https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312797/beauty_beats_clinic/m66i0vwdql14yfwwanjf.jpg');
+  const [afterImg, setAfterImg] = useState('https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312795/beauty_beats_clinic/pqxhzpkbdpumlkmnlzye.jpg');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -29,19 +29,19 @@ const slides = [
     title: "Redefine Your",
     highlight: "Natural Glow",
     desc: "BeautyBeats combines advanced clinic technology with premium salon artistry to create a transformation you can feel.",
-    video: "/intro.mp4"
+    video: "https://res.cloudinary.com/dfcvnc77l/video/upload/v1784312888/beauty_beats_global/d76fnmtwf3z5h1qj0orf.mp4"
   },
   {
     title: "Elegance in Every",
     highlight: "Bridal Stroke",
     desc: "Unleash your inner goddess with our premium bridal packages tailored for your special day.",
-    img: "/images/IMG_4146.png"
+    img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312771/beauty_beats_salon/sjjwr1y6szqttjsyqtc3.jpg"
   },
   {
     title: "Revolutionary",
     highlight: "Skin Science",
     desc: "Experience the next level of skincare with our clinical-grade treatments and expert dermatologists.",
-    img: "/images/skin.png"
+    img: "https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312790/beauty_beats_salon/h3t6iyx59rjjjghzpg8w.jpg"
   }
 ];
 
@@ -131,19 +131,7 @@ export default function HomePage() {
                 Explore Services
               </Link>
             </div>
-            
-            <div className="mt-12 flex items-center gap-6">
-               <div className="flex -space-x-3">
-                 {[1,2,3,4].map(i => (
-                   <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
-                      <img src="/images/IMG_4146.png" className="w-full h-full object-cover" />
-                   </div>
-                 ))}
-               </div>
-               <p className="text-sm font-bold text-gray-500">
-                 <span className="text-gray-900">5k+</span> Happy Clients
-               </p>
-            </div>
+
           </motion.div>
 
           <motion.div 

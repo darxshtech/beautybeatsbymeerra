@@ -72,7 +72,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {!collapsed && (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
-               <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+               <img src="https://res.cloudinary.com/dfcvnc77l/image/upload/v1784312890/beauty_beats_global/yld5fnzjwkbdurswmiv8.jpg" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className={styles.logo}>BeautyBeats</h1>
           </div>

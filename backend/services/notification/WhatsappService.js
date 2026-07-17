@@ -82,6 +82,62 @@ class WhatsappService {
     }
   }
 
+  async sendDocumentMessage(to, documentUrl, filename, caption = '') {
+    if (!this.token || !this.phoneNumberId) {
+      console.error('[WHATSAPP] Error: Credentials missing in .env');
+      return { success: false, message: 'WhatsApp credentials missing on server.' };
+    }
+
+    let formattedPhone = to ? String(to).replace(/[^0-9]/g, '') : '';
+    if (formattedPhone.length === 10) {
+      formattedPhone = '91' + formattedPhone;
+    }
+
+    console.log(`[WHATSAPP] Attempting to send document to ${formattedPhone}...`);
+
+    try {
+      const response = await axios.post(
+        this.baseUrl,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'document',
+          document: {
+            link: documentUrl,
+            filename: filename,
+            caption: caption
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log(`[WHATSAPP] ✅ Success: Document sent to ${formattedPhone}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errData = error.response?.data?.error;
+      const errorCode = errData?.code;
+      const errorMsg = errData?.message || error.message;
+
+      console.error(`[WHATSAPP] ❌ Failed to send document to ${formattedPhone}:`, errorMsg);
+
+      // Handle Sandbox gracefully in development
+      if (errorCode === 131030 && process.env.NODE_ENV === 'development') {
+        return { 
+          success: true, 
+          simulated: true, 
+          message: `[SANDBOX] Recipient ${formattedPhone} is not verified. (Simulated success)`
+        };
+      }
+
+      return { success: false, error: errorMsg, code: errorCode };
+    }
+  }
+
   async sendTemplateMessage(to, templateName, components = []) {
     let formattedPhone = to ? String(to).replace(/[^0-9]/g, '') : '';
     if (formattedPhone.length === 10) {

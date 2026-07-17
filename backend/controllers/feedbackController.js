@@ -17,17 +17,51 @@ const getFeedback = async (req, res) => {
   }
 };
 
+const googleReviews = [
+  {
+    customer: { name: "Kaajal Noorani" },
+    comment: "Excellent place, very relaxing and the services rendered too are very good. Had a hair spa here and Vaishali did a splendid job. Do keep up the good work and all the very best 👍",
+    rating: 5,
+    service: { name: "Hair Spa" }
+  },
+  {
+    customer: { name: "Nitesh Gaikwad" },
+    comment: "Good purse and fashionable accessories. Highly recommend for accessories and quality services.",
+    rating: 5,
+    service: { name: "Accessories & Styling" }
+  },
+  {
+    customer: { name: "GM Greenhouses" },
+    comment: "Truly premium salon and clinic services. Highly professional staff and great experience!",
+    rating: 5,
+    service: { name: "Premium Service" }
+  },
+  {
+    customer: { name: "Rupesh Singh" },
+    comment: "Awesome experience. The staff is very friendly and the service quality is top notch.",
+    rating: 5,
+    service: { name: "Salon Experience" }
+  },
+  {
+    customer: { name: "Shubham Satkar" },
+    comment: "Excellent services and great ambiance. Definitely one of the best salons in the area.",
+    rating: 5,
+    service: { name: "Grooming & Styling" }
+  },
+  {
+    customer: { name: "Savita Santosh Tamboli" },
+    comment: "Highly recommended salon. Professional services, clean environment, and wonderful staff.",
+    rating: 5,
+    service: { name: "Premium Care" }
+  }
+];
+
 // @desc    Get approved public reviews (positive only, rating >= 4)
 // @route   GET /api/feedback/public
 // @access  Public
 const getPublicFeedback = async (req, res) => {
   try {
-    const feedback = await Feedback.find({ isApproved: true, rating: { $gte: 4 } })
-      .populate('customer', 'name')
-      .populate('services', 'name')
-      .sort('-createdAt')
-      .limit(10);
-    res.json({ success: true, data: feedback });
+    res.json({ success: true, data: googleReviews });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
