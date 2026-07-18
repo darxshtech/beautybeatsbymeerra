@@ -614,10 +614,10 @@ export default function WebsiteContentManager() {
              </div>
            )}
            
-           {(modalTypeContext.startsWith('HERO') || modalTypeContext.startsWith('ABOUT') || modalTypeContext.startsWith('CONTACT') || modalTypeContext.startsWith('SERVICES') || modalTypeContext === 'CUSTOMER_REVIEW' || modalTypeContext === 'WAIT_FREE_GALLERY') && (
+           {(modalTypeContext.startsWith('HERO') || modalTypeContext.startsWith('ABOUT') || modalTypeContext.startsWith('CONTACT') || modalTypeContext.startsWith('SERVICES') || modalTypeContext === 'CUSTOMER_REVIEW' || modalTypeContext === 'WAIT_FREE_GALLERY' || modalTypeContext === 'WELCOME_POPUP' || modalTypeContext === 'TOUR_VIDEO') && (
              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                 {modalTypeContext === 'CUSTOMER_REVIEW' ? 'Review Content' : modalTypeContext.includes('STAT') ? 'Stat Value (e.g. 10k+)' : 'Subtitle/Highlight Text/URL'}
+                 {modalTypeContext === 'CUSTOMER_REVIEW' ? 'Review Content' : modalTypeContext.includes('STAT') ? 'Stat Value (e.g. 10k+)' : modalTypeContext === 'WELCOME_POPUP' ? 'Pop-up Description/Subtitle' : modalTypeContext === 'TOUR_VIDEO' ? 'Subtitle/Label' : 'Subtitle/Highlight Text/URL'}
                </label>
                <textarea 
                  className={styles.input}
@@ -631,7 +631,7 @@ export default function WebsiteContentManager() {
 
            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-               Upload {modalTypeContext === 'TOUR_VIDEO' || modalTypeContext === 'HERO_SLIDE' ? 'Media (Image/Video)' : 'Image'}
+               Upload {modalTypeContext === 'TOUR_VIDEO' || modalTypeContext === 'HERO_SLIDE' || modalTypeContext === 'WELCOME_POPUP' ? 'Media (Image/Video)' : 'Image'}
              </label>
              <input 
                type="file" 
