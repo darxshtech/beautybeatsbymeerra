@@ -46,7 +46,7 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden lg:flex items-center gap-8">
-          {['Home', 'Services', 'Packages', 'Subscriptions', 'About', 'Contact'].map((item) => (
+          {['Home', 'Services', 'Packages', 'About', 'Contact'].map((item) => (
             <Link key={item} href={item === 'Home' ? '/' : `/${item.toLowerCase()}`} className="text-sm font-bold text-gray-600 hover:text-primary transition-colors">
               {item}
             </Link>
@@ -83,7 +83,7 @@ export default function Navbar() {
                </button>
             </div>
             <div className="flex flex-col gap-6 overflow-y-auto pb-12">
-               {['Home', 'Services', 'Packages', 'Subscriptions', 'About', 'Contact', 'Profile'].map((item) => (
+               {['Home', 'Services', 'Packages', 'About', 'Contact', 'Profile'].map((item) => (
                 <Link key={item} href={item === 'Home' ? '/' : `/${item.toLowerCase()}`} onClick={() => setMobileMenu(false)} className="text-3xl font-black text-gray-900 border-b border-gray-100 pb-4">
                   {item}
                 </Link>

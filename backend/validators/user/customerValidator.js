@@ -17,13 +17,7 @@ const customerValidator = {
         notes: Joi.string().allow('', null)
       }),
       password: Joi.string().min(6).allow('', null),
-      role: Joi.string().valid('ADMIN', 'STAFF', 'CUSTOMER'),
-      subscription: Joi.object({
-        planName: Joi.string().allow('', null),
-        status: Joi.string().valid('ACTIVE', 'INACTIVE', 'EXPIRED', 'CANCELLED').allow('', null),
-        startDate: Joi.date().allow(null, ''),
-        endDate: Joi.date().allow(null, '')
-      }).allow(null)
+      role: Joi.string().valid('ADMIN', 'STAFF', 'CUSTOMER')
     });
     return schema.validate(data);
   },
@@ -52,13 +46,7 @@ const customerValidator = {
         day: Joi.string(),
         slots: Joi.array().items(Joi.string())
       })),
-      password: Joi.string().min(6).allow('', null),
-      subscription: Joi.object({
-        planName: Joi.string().allow('', null),
-        status: Joi.string().valid('ACTIVE', 'INACTIVE', 'EXPIRED', 'CANCELLED').allow('', null),
-        startDate: Joi.date().allow(null, ''),
-        endDate: Joi.date().allow(null, '')
-      }).allow(null)
+      password: Joi.string().min(6).allow('', null)
     });
     return schema.validate(data);
   }

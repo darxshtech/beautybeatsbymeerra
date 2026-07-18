@@ -88,7 +88,6 @@ app.use('/api/message-templates', require('./routes/messageTemplates'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/consent-forms', require('./routes/consentForms'));
 app.use('/api/admin-notifications', require('./routes/adminNotifications'));
-app.use('/api/subscriptions', require('./routes/subscriptions'));
 
 // Catch-all for 404s
 app.use((req, res, next) => {

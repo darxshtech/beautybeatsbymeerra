@@ -43,7 +43,6 @@ const adminMenuItems = [
   { icon: Bell, label: 'Notifications', href: '/notifications' },
   { icon: MessageSquare, label: 'Message Formats', href: '/message-formats' },
   { icon: BarChart3, label: 'Reports', href: '/reports' },
-  { icon: CreditCard, label: 'Subscriptions', href: '/subscriptions' },
   { icon: ImageIcon, label: 'Website Content', href: '/content' },
 ];
 

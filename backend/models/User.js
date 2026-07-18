@@ -25,13 +25,6 @@ const UserSchema = new mongoose.Schema({
   lastVisit: { type: Date },
   registrationSource: { type: String, enum: ['ONLINE', 'WALKIN'], default: 'ONLINE' },
   
-  // Subscription / Membership Fields
-  subscription: {
-    planName: { type: String, default: 'NONE' }, // e.g. Basic, Premium, VIP
-    status: { type: String, enum: ['ACTIVE', 'INACTIVE', 'EXPIRED', 'CANCELLED'], default: 'INACTIVE' },
-    startDate: { type: Date },
-    endDate: { type: Date }
-  },
   
   // Staff Specific Fields
   specialization: [String],

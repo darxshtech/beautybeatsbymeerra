@@ -21,9 +21,7 @@ export default function Customers() {
     phone: '',
     whatsappNumber: '',
     address: '',
-    dateOfBirth: '',
-    subscriptionPlan: 'NONE',
-    subscriptionStatus: 'INACTIVE'
+    dateOfBirth: ''
   });
   const [viewingCustomer, setViewingCustomer] = useState<any>(null);
   const [customerHistory, setCustomerHistory] = useState<any[]>([]);
@@ -72,13 +70,11 @@ export default function Customers() {
         phone: customer.phone || '',
         whatsappNumber: customer.whatsappNumber || '',
         address: customer.address || '',
-        dateOfBirth: bday ? new Date(bday).toISOString().split('T')[0] : '',
-        subscriptionPlan: customer.subscription?.planName || 'NONE',
-        subscriptionStatus: customer.subscription?.status || 'INACTIVE'
+        dateOfBirth: bday ? new Date(bday).toISOString().split('T')[0] : ''
       });
     } else {
       setEditingCustomer(null);
-      setFormData({ name: '', email: '', phone: '', whatsappNumber: '', address: '', dateOfBirth: '', subscriptionPlan: 'NONE', subscriptionStatus: 'INACTIVE' });
+      setFormData({ name: '', email: '', phone: '', whatsappNumber: '', address: '', dateOfBirth: '' });
     }
     setIsModalOpen(true);
   };
@@ -95,12 +91,7 @@ export default function Customers() {
         submitData.dateOfBirth = submitData.dateOfBirth + 'T12:00:00.000Z';
       }
 
-      submitData.subscription = {
-        planName: formData.subscriptionPlan,
-        status: formData.subscriptionStatus
-      };
-      delete submitData.subscriptionPlan;
-      delete submitData.subscriptionStatus;
+
 
       const res = await apiRequest(endpoint, {
         method,
@@ -200,22 +191,6 @@ export default function Customers() {
              }}>★ {val.loyaltyPoints}</span>
           )},
           { key: 'visitCount', label: 'Visits' },
-          { key: 'subscription', label: 'Subscription', render: (val) => {
-             const plan = val.subscription?.planName || 'NONE';
-             const isActive = val.subscription?.status === 'ACTIVE';
-             return (
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '13px', color: plan !== 'NONE' ? 'var(--primary)' : 'var(--text-muted)' }}>
-                    {plan}
-                  </span>
-                  {plan !== 'NONE' && (
-                    <span style={{ fontSize: '11px', color: isActive ? '#34C759' : '#FF3B30' }}>
-                      {val.subscription?.status}
-                    </span>
-                  )}
-               </div>
-             );
-          }},
           { key: 'lastVisit', label: 'Last Visit', render: (val) => (
              <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
                 {val.lastVisit ? new Date(val.lastVisit).toLocaleDateString() : 'New Guest'}
@@ -321,35 +296,7 @@ export default function Customers() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Subscription Plan</label>
-              <select
-                className={styles.input}
-                value={formData.subscriptionPlan}
-                onChange={e => setFormData({...formData, subscriptionPlan: e.target.value})}
-              >
-                <option value="NONE">None</option>
-                <option value="BASIC">Basic Plan</option>
-                <option value="PREMIUM">Premium Plan</option>
-                <option value="VIP">VIP Gold</option>
-              </select>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Status</label>
-              <select
-                className={styles.input}
-                value={formData.subscriptionStatus}
-                onChange={e => setFormData({...formData, subscriptionStatus: e.target.value})}
-              >
-                <option value="INACTIVE">Inactive</option>
-                <option value="ACTIVE">Active</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-          </div>
+
 
           <button 
             type="submit"
