@@ -10,6 +10,14 @@ import styles from '@/styles/layout/Dashboard.module.css';
 import cardStyles from '@/styles/components/Card.module.css';
 import { apiRequest } from '@/services/api';
 import Modal from '@/components/Modal';
+const isVideoUrl = (url?: string) => {
+  if (!url) return false;
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.endsWith('.mp4') || 
+         lowercaseUrl.endsWith('.webm') || 
+         lowercaseUrl.endsWith('.mov') || 
+         lowercaseUrl.includes('/video/upload/');
+};
 
 export default function WebsiteContentManager() {
   const [contents, setContents] = useState<any[]>([]);
@@ -264,7 +272,7 @@ export default function WebsiteContentManager() {
                      <h4 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>Welcome Pop-up Promo</h4>
                      {welcomePopup ? (
                         <div>
-                           {welcomePopup.imageUrl?.endsWith('.mp4') ? <video src={welcomePopup.imageUrl} style={{ width: '100%', borderRadius: '8px' }} /> : <img src={welcomePopup.imageUrl} style={{ width: '100%', borderRadius: '8px' }} />}
+                           {isVideoUrl(welcomePopup.imageUrl) ? <video src={welcomePopup.imageUrl} muted loop autoPlay playsInline style={{ width: '100%', borderRadius: '8px' }} /> : <img src={welcomePopup.imageUrl} style={{ width: '100%', borderRadius: '8px' }} />}
                            <p style={{ fontWeight: 800, fontSize: '14px', marginTop: '8px' }}>{welcomePopup.title}</p>
                         </div>
                      ) : (
@@ -293,7 +301,7 @@ export default function WebsiteContentManager() {
                   <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                      {activeSlide ? (
                        <div style={{ width: '300px', height: '300px', borderRadius: '40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-                          {activeSlide.imageUrl?.endsWith('.mp4') || activeSlide.imageUrl?.endsWith('.MOV') ? <video src={activeSlide.imageUrl} muted loop autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={activeSlide.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                          {isVideoUrl(activeSlide.imageUrl) ? <video src={activeSlide.imageUrl} muted loop autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={activeSlide.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                        </div>
                      ) : (
                        <div style={{ width: '300px', height: '300px', borderRadius: '40px', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px' }}>
