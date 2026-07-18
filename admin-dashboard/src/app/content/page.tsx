@@ -258,7 +258,7 @@ export default function WebsiteContentManager() {
            {activeTab === 'HOME' && (
              <>
                {/* 1. WELCOME POP-UP MODULE */}
-               <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 50 }}>
+               <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 150 }}>
                   <div className="visual-section edit-pulse" style={{ background: 'white', padding: '12px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', width: '250px', cursor: 'pointer' }}>
                      <VisualEditOverlay onClick={() => handleOpenModal(welcomePopup, 'WELCOME_POPUP')} title="Edit Welcome Pop-up" item={welcomePopup} />
                      <h4 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px' }}>Welcome Pop-up Promo</h4>
