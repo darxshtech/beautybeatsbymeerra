@@ -4,7 +4,7 @@ const cloudinary = require('../utils/cloudinary');
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'beauty_beats_content' },
+      { resource_type: 'auto', folder: 'beauty_beats_content' },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
