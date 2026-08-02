@@ -55,6 +55,7 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [services, setServices] = useState<any[]>(fallbackServices);
   const [heroSlides, setHeroSlides] = useState<any[]>(slides);
+  const [signatureHeader, setSignatureHeader] = useState<{ title?: string; subtitle?: string } | null>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -70,18 +71,26 @@ export default function HomePage() {
     
     const fetchContent = async () => {
       try {
-         const res = await fetch(`${API_URL}/website-content?branch=SALON&type=HERO_SLIDE&isActive=true`);
+         const res = await fetch(`${API_URL}/website-content?branch=SALON&isActive=true`);
          const json = await res.json();
          if (json.success && json.data?.length > 0) {
-            setHeroSlides(json.data.map((item: any) => {
-               const isVideo = item.imageUrl?.endsWith('.mp4') || item.imageUrl?.endsWith('.webm') || item.imageUrl?.includes('/video/upload/');
-               return {
-                  title: item.title || "BeautyBeats",
-                  highlight: item.subtitle || "Premium Salon",
-                  desc: "Experience beauty with technology.",
-                  ...(isVideo ? { video: item.imageUrl } : { img: item.imageUrl })
-               };
-            }));
+            const slides = json.data.filter((item: any) => item.type === 'HERO_SLIDE');
+            if (slides.length > 0) {
+              setHeroSlides(slides.map((item: any) => {
+                 const isVideo = item.imageUrl?.endsWith('.mp4') || item.imageUrl?.endsWith('.webm') || item.imageUrl?.includes('/video/upload/');
+                 return {
+                    title: item.title || "BeautyBeats",
+                    highlight: item.subtitle || "Premium Salon",
+                    desc: "Experience beauty with technology.",
+                    ...(isVideo ? { video: item.imageUrl } : { img: item.imageUrl })
+                 };
+              }));
+            }
+            
+            const sigHeader = json.data.find((item: any) => item.type === 'SIGNATURE_SERVICES_HEADER');
+            if (sigHeader) {
+               setSignatureHeader({ title: sigHeader.title, subtitle: sigHeader.subtitle });
+            }
          }
       } catch (err) {}
     };
@@ -179,8 +188,8 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">Our Signature Services</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto mb-16 text-lg">Curated beauty treatments designed for your unique personality and skin type.</p>
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">{signatureHeader?.title || 'Our Signature Services'}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto mb-16 text-lg">{signatureHeader?.subtitle || 'Curated beauty treatments designed for your unique personality and skin type.'}</p>
           </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

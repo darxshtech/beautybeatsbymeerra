@@ -70,6 +70,7 @@ export default function WebsiteContentManager() {
   const afterTransform = getBranchContent('TRANSFORMATION_AFTER')[0];
   const reviews = getBranchContent('CUSTOMER_REVIEW');
   const welcomePopup = getBranchContent('WELCOME_POPUP')[0];
+  const signatureServicesHeader = getBranchContent('SIGNATURE_SERVICES_HEADER')[0];
 
   // About Page Contents
   const aboutHero = getBranchContent('ABOUT_HERO')[0];
@@ -319,6 +320,22 @@ export default function WebsiteContentManager() {
                         <Plus size={10} /> Add Slide
                      </button>
                   </div>
+               </section>
+
+               {/* 2.5. SIGNATURE SERVICES SECTION */}
+               <section className="visual-section" style={{ padding: '60px 40px', background: '#FAFAFA', borderBottom: '1px solid var(--border-light)' }}>
+                 <VisualEditOverlay onClick={() => handleOpenModal(signatureServicesHeader, 'SIGNATURE_SERVICES_HEADER')} title="Edit Signature Services Title & Subtitle" item={signatureServicesHeader} />
+                 <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'rgba(255, 59, 48, 0.08)', color: 'var(--primary)', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>
+                       <Scissors size={12} /> Curated Offerings
+                    </div>
+                    <h2 style={{ fontSize: '36px', fontWeight: 900, color: '#1C1C1E', marginBottom: '12px' }}>
+                       {signatureServicesHeader?.title || 'Our Signature Services'}
+                    </h2>
+                    <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
+                       {signatureServicesHeader?.subtitle || 'Curated beauty treatments designed for your unique personality and skin type.'}
+                    </p>
+                 </div>
                </section>
 
                {/* 3. WAIT-FREE EXPERIENCE GALLERY */}
