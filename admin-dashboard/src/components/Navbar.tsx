@@ -150,7 +150,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
              setNotifCount(json.data.length || 0);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.message?.includes('Not authorized') || err?.message?.includes('token failed')) {
+          return;
+        }
         console.error('Notification fetching failed:', err);
       }
     };

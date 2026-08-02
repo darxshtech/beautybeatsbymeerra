@@ -21,7 +21,14 @@ export async function apiRequest(endpoint: string, options: any = {}) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('bb_token');
+      localStorage.removeItem('bb_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.error || error.message || 'Server error occurred');
   }
 
