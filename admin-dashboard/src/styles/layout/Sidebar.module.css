@@ -10,6 +10,7 @@
   transition: var(--transition);
   position: sticky;
   top: 0;
+  align-self: flex-start;
   z-index: 100;
   overflow: hidden;
   flex-shrink: 0;
@@ -51,6 +52,7 @@
   transition: var(--transition);
   position: sticky;
   top: 0;
+  align-self: flex-start;
   align-items: center;
   z-index: 100;
   overflow: hidden;

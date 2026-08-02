@@ -54,8 +54,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       display: showSidebar ? 'flex' : 'block', 
       background: 'var(--bg-main)', 
       minHeight: '100vh', 
-      position: 'relative',
-      overflowX: 'hidden'
+      position: 'relative'
     }}>
       {showSidebar && (
         <>
