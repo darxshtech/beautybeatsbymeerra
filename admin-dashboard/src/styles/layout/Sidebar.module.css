@@ -1,6 +1,7 @@
 .sidebar {
   width: 280px;
   height: 100vh;
+  max-height: 100vh;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-light);
   display: flex;
@@ -10,6 +11,8 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {
@@ -20,6 +23,7 @@
     bottom: 0;
     width: 280px;
     height: 100vh;
+    max-height: 100vh;
     z-index: 500; /* Above everything */
     background: var(--bg-sidebar);
     box-shadow: 20px 0 60px rgba(0,0,0,0.15);
@@ -38,6 +42,7 @@
 .sidebarCollapsed {
   width: 80px;
   height: 100vh;
+  max-height: 100vh;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-light);
   display: flex;
@@ -47,14 +52,18 @@
   position: sticky;
   top: 0;
   align-items: center;
+  z-index: 100;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
   height: 40px;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -69,7 +78,9 @@
   flex-direction: column;
   gap: 0.5rem;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
 }
 
