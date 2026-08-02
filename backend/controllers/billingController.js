@@ -119,46 +119,58 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Customer phone not found' });
     }
 
-    // 1. Generate & Upload PDF Invoice to Cloudinary
-    const InvoicePdfService = require('../services/notification/InvoicePdfService');
-    const invoiceUrl = await InvoicePdfService.generateAndUploadInvoice(bill);
+    let invoiceUrl = bill.invoiceUrl || null;
+    let autoSendSuccess = false;
 
-    // Save PDF URL to Bill
-    bill.invoiceUrl = invoiceUrl;
-    await bill.save();
-
-    // 2. Automatically Send PDF to Customer's WhatsApp via Meta API
-    const WhatsappService = require('../services/notification/WhatsappService');
-    const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your invoice from ${bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats'}.`;
-    await WhatsappService.sendDocumentMessage(phone, invoiceUrl, `Invoice_${bill._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
-
-    // 3. Automatically Send Copy to Admin's WhatsApp
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      const adminCaption = `Admin Copy: Invoice generated for ${bill.customer?.name || 'Customer'} (Total: ₹${bill.total}).`;
-      await WhatsappService.sendDocumentMessage(adminPhone, invoiceUrl, `INV_${bill._id.toString().substring(0, 8).toUpperCase()}_${(bill.customer?.name || 'Customer').replace(/\s/g, '_')}.pdf`, adminCaption);
+    // 1. Try to Generate & Upload PDF Invoice to Cloudinary
+    try {
+      const InvoicePdfService = require('../services/notification/InvoicePdfService');
+      invoiceUrl = await InvoicePdfService.generateAndUploadInvoice(bill);
+      bill.invoiceUrl = invoiceUrl;
+      await bill.save();
+    } catch (pdfErr) {
+      console.error('[BILLING] PDF/Cloudinary Upload skipped or failed:', pdfErr.message);
     }
 
-    // Build fallback manual redirect message
+    // 2. Try to Send PDF to Customer's WhatsApp via Meta Graph API
+    if (invoiceUrl) {
+      try {
+        const WhatsappService = require('../services/notification/WhatsappService');
+        const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your invoice from ${bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats'}.`;
+        const waRes = await WhatsappService.sendDocumentMessage(phone, invoiceUrl, `Invoice_${bill._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
+        if (waRes?.success) autoSendSuccess = true;
+
+        const adminPhone = process.env.ADMIN_PHONE;
+        if (adminPhone) {
+          const adminCaption = `Admin Copy: Invoice generated for ${bill.customer?.name || 'Customer'} (Total: ₹${bill.total}).`;
+          await WhatsappService.sendDocumentMessage(adminPhone, invoiceUrl, `INV_${bill._id.toString().substring(0, 8).toUpperCase()}_${(bill.customer?.name || 'Customer').replace(/\s/g, '_')}.pdf`, adminCaption);
+        }
+      } catch (waErr) {
+        console.error('[BILLING] Meta WhatsApp API auto-send failed:', waErr.message);
+      }
+    }
+
+    // Build manual WhatsApp wa.me redirect message
     const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
-    const items = bill.items.map(i => `• ${i.name} — ₹${i.price}`).join('\n');
+    const itemsList = (bill.items || []).map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
       `🧾 *${brandName} Invoice*`,
       ``,
       `Hi ${bill.customer?.name || 'Customer'},`,
-      `Thank you for your visit! Here's your invoice PDF: ${invoiceUrl}`,
-      ``,
-      `*Total Paid:* ₹${bill.total}`,
-      `*Payment:* ${bill.paymentMethod}`,
+      `Thank you for your visit!${invoiceUrl ? ` Here's your invoice PDF: ${invoiceUrl}` : ''}`,
+      itemsList ? `\n*Services / Items:*\n${itemsList}` : '',
+      `\n*Total Paid:* ₹${bill.total}`,
+      `*Payment:* ${bill.paymentMethod || 'CASH'}`,
       ``,
       `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
 
-    const whatsappUrl = `https://wa.me/91${phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(msg)}`;
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const whatsappUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true, 
-      message: 'WhatsApp invoice generated and sent successfully.',
+      message: autoSendSuccess ? 'Invoice sent automatically via WhatsApp!' : 'Invoice ready to send via WhatsApp.',
       whatsappUrl,
       invoiceUrl,
       formattedMessage: msg
