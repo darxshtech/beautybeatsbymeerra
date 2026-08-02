@@ -142,10 +142,15 @@ exports.sendBillWhatsApp = async (req, res, next) => {
     }
 
     // 2. Try to Send PDF to Customer's WhatsApp via Meta Graph API
+    const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+    const clientWebsiteUrl = bill.branch === 'CLINIC' 
+      ? (process.env.CLINIC_WEBSITE_URL || 'https://beautybeatsbymeerra.vercel.app/')
+      : (process.env.CLIENT_WEBSITE_URL || 'https://beautybeatsbymeerra.vercel.app/');
+
     if (invoiceUrl) {
       try {
         const WhatsappService = require('../services/notification/WhatsappService');
-        const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your invoice from ${bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats'}.`;
+        const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your official invoice from ${brandName}.\n\nVisit us: ${clientWebsiteUrl}`;
         const waRes = await WhatsappService.sendDocumentMessage(phone, invoiceUrl, `Invoice_${bill._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
         if (waRes?.success) autoSendSuccess = true;
 
@@ -159,20 +164,22 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       }
     }
 
-    // Build manual WhatsApp wa.me redirect message with direct PDF invoice link
-    const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
+    // Build manual WhatsApp wa.me redirect message with direct PDF invoice link & client website URL
     const itemsList = (bill.items || []).map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
       `🧾 *${brandName} Official Invoice*`,
       ``,
       `Hi ${bill.customer?.name || 'Customer'},`,
-      `Thank you for your visit!`,
+      `Thank you for visiting ${brandName}!`,
       itemsList ? `\n*Services / Items:*\n${itemsList}` : '',
       `\n*Total Paid:* ₹${bill.total}`,
       `*Payment:* ${bill.paymentMethod || 'CASH'}`,
       ``,
       `📄 *Download Detailed PDF Invoice:*`,
       `${invoiceUrl}`,
+      ``,
+      `🌐 *Visit Our Salon Website & Book Appointments:*`,
+      `${clientWebsiteUrl}`,
       ``,
       `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
