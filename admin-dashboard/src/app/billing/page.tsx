@@ -309,6 +309,20 @@ export default function Billing() {
                 >
                    <Send size={12} /> {sendingId === val._id ? '...' : 'Send'}
                 </button>
+                <a 
+                  href={`${process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api'}/billing/${val._id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.pageBtn} 
+                  style={{ 
+                    padding: '6px 12px', color: 'var(--primary)', background: 'var(--primary-light)', 
+                    borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', 
+                    fontSize: '11px', fontWeight: 700, textDecoration: 'none'
+                  }} 
+                  title="View / Download PDF Invoice"
+                >
+                   <FileText size={12} /> PDF
+                </a>
              </div>
           )}
         ]}

@@ -132,6 +132,15 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       console.error('[BILLING] PDF/Cloudinary Upload skipped or failed:', pdfErr.message);
     }
 
+    // Fallback: If Cloudinary upload failed or wasn't configured, use direct backend PDF route
+    if (!invoiceUrl) {
+      const host = req.get('host');
+      const protocol = req.protocol || 'https';
+      invoiceUrl = `${protocol}://${host}/api/billing/${bill._id}/pdf`;
+      bill.invoiceUrl = invoiceUrl;
+      await bill.save().catch(() => {});
+    }
+
     // 2. Try to Send PDF to Customer's WhatsApp via Meta Graph API
     if (invoiceUrl) {
       try {
@@ -150,17 +159,20 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       }
     }
 
-    // Build manual WhatsApp wa.me redirect message
+    // Build manual WhatsApp wa.me redirect message with direct PDF invoice link
     const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
     const itemsList = (bill.items || []).map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
-      `🧾 *${brandName} Invoice*`,
+      `🧾 *${brandName} Official Invoice*`,
       ``,
       `Hi ${bill.customer?.name || 'Customer'},`,
-      `Thank you for your visit!${invoiceUrl ? ` Here's your invoice PDF: ${invoiceUrl}` : ''}`,
+      `Thank you for your visit!`,
       itemsList ? `\n*Services / Items:*\n${itemsList}` : '',
       `\n*Total Paid:* ₹${bill.total}`,
       `*Payment:* ${bill.paymentMethod || 'CASH'}`,
+      ``,
+      `📄 *Download Detailed PDF Invoice:*`,
+      `${invoiceUrl}`,
       ``,
       `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
@@ -170,11 +182,43 @@ exports.sendBillWhatsApp = async (req, res, next) => {
 
     return res.status(200).json({ 
       success: true, 
-      message: autoSendSuccess ? 'Invoice sent automatically via WhatsApp!' : 'Invoice ready to send via WhatsApp.',
+      message: autoSendSuccess ? 'Invoice PDF sent automatically via WhatsApp!' : 'Invoice PDF ready to send via WhatsApp.',
       whatsappUrl,
       invoiceUrl,
       formattedMessage: msg
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @desc    Generate and stream single Bill PDF Invoice directly
+ * @route   GET /api/billing/:id/pdf
+ * @access  Public / Tokenized
+ */
+exports.generateSingleBillPDF = async (req, res, next) => {
+  try {
+    const bill = await Billing.findById(req.params.id)
+      .populate('customer', 'name phone')
+      .populate({
+        path: 'appointment',
+        populate: { path: 'services', select: 'name price' }
+      });
+
+    if (!bill) {
+      return res.status(404).json({ success: false, message: 'Bill not found' });
+    }
+
+    const InvoicePdfService = require('../services/notification/InvoicePdfService');
+    const pdfBuffer = await InvoicePdfService.generateInvoicePDFBuffer(bill);
+
+    const invId = bill._id.toString().substring(0, 8).toUpperCase();
+    const filename = `BeautyBeats_Invoice_INV-${invId}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
   } catch (err) {
     next(err);
   }

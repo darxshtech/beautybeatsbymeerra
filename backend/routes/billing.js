@@ -6,14 +6,16 @@ const {
   createBill, 
   updateBillStatus,
   sendBillWhatsApp,
-  generateCustomerHistoryPDF
+  generateCustomerHistoryPDF,
+  generateSingleBillPDF
 } = require('../controllers/billingController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalProtect } = require('../middleware/auth');
 const validate = require('../middleware/validateMiddleware');
 const billingValidator = require('../validators/billing/billingValidator');
 
 router.get('/', protect, authorize('ADMIN', 'STAFF'), getBills);
 router.get('/customer/:id/pdf', protect, authorize('ADMIN', 'STAFF'), generateCustomerHistoryPDF);
+router.get('/:id/pdf', optionalProtect, generateSingleBillPDF);
 router.get('/:id', protect, getBillById);
 router.post('/', protect, authorize('ADMIN', 'STAFF'), validate(billingValidator.create), createBill);
 router.post('/:id/send', protect, authorize('ADMIN', 'STAFF'), sendBillWhatsApp);
