@@ -71,6 +71,7 @@ export default function WebsiteContentManager() {
   const reviews = getBranchContent('CUSTOMER_REVIEW');
   const welcomePopup = getBranchContent('WELCOME_POPUP')[0];
   const signatureServicesHeader = getBranchContent('SIGNATURE_SERVICES_HEADER')[0];
+  const signatureServicesItems = getBranchContent('SIGNATURE_SERVICE_ITEM');
 
   // About Page Contents
   const aboutHero = getBranchContent('ABOUT_HERO')[0];
@@ -323,9 +324,9 @@ export default function WebsiteContentManager() {
                </section>
 
                {/* 2.5. SIGNATURE SERVICES SECTION */}
-               <section className="visual-section" style={{ padding: '60px 40px', background: '#FAFAFA', borderBottom: '1px solid var(--border-light)' }}>
-                 <VisualEditOverlay onClick={() => handleOpenModal(signatureServicesHeader, 'SIGNATURE_SERVICES_HEADER')} title="Edit Signature Services Title & Subtitle" item={signatureServicesHeader} />
-                 <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+               <section className="visual-section" style={{ padding: '60px 40px', background: '#FAFAFA', borderBottom: '1px solid var(--border-light)', position: 'relative' }}>
+                 <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px auto', position: 'relative', padding: '20px', borderRadius: '16px' }} className="visual-section">
+                    <VisualEditOverlay onClick={() => handleOpenModal(signatureServicesHeader, 'SIGNATURE_SERVICES_HEADER')} title="Edit Header Title & Subtitle" item={signatureServicesHeader} />
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'rgba(255, 59, 48, 0.08)', color: 'var(--primary)', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>
                        <Scissors size={12} /> Curated Offerings
                     </div>
@@ -335,6 +336,49 @@ export default function WebsiteContentManager() {
                     <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
                        {signatureServicesHeader?.subtitle || 'Curated beauty treatments designed for your unique personality and skin type.'}
                     </p>
+                 </div>
+
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h4 style={{ fontWeight: 800, margin: 0 }}>Signature Service Image Cards</h4>
+                    <button 
+                      onClick={() => handleOpenModal(null, 'SIGNATURE_SERVICE_ITEM')}
+                      style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '20px', fontWeight: 800, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                       <Plus size={14} /> Add Signature Service Image
+                    </button>
+                 </div>
+
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                    {signatureServicesItems.length > 0 ? (
+                      signatureServicesItems.map((item) => (
+                        <div key={item._id} className="visual-section" style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', border: '1px solid #E5E7EB', position: 'relative', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+                           <VisualEditOverlay onClick={(e: any) => { e.stopPropagation(); handleOpenModal(item, 'SIGNATURE_SERVICE_ITEM'); }} title="Edit Image / Service" item={item} />
+                           <div style={{ height: '160px', width: '100%', position: 'relative', background: '#F3F4F6' }}>
+                              {item.imageUrl ? (
+                                <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF' }}>
+                                   <ImageIcon size={32} />
+                                </div>
+                              )}
+                           </div>
+                           <div style={{ padding: '16px' }}>
+                              <h4 style={{ fontWeight: 900, fontSize: '16px', margin: '0 0 6px 0', color: '#111827' }}>{item.title || 'Untitled Service'}</h4>
+                              <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, lineHeight: '1.4' }}>{item.subtitle || 'No description provided'}</p>
+                           </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ gridColumn: '1 / -1', padding: '30px', textAlign: 'center', background: 'white', borderRadius: '20px', border: '2px dashed #E5E7EB' }}>
+                         <p style={{ color: '#6B7280', fontWeight: 600, margin: '0 0 12px 0' }}>No signature service image cards created yet.</p>
+                         <button 
+                           onClick={() => handleOpenModal(null, 'SIGNATURE_SERVICE_ITEM')}
+                           style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 18px', borderRadius: '20px', fontWeight: 800, fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                         >
+                            <Plus size={14} /> Add Your First Signature Service Image
+                         </button>
+                      </div>
+                    )}
                  </div>
                </section>
 

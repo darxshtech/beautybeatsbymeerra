@@ -24,6 +24,7 @@ export default function Services() {
     price: '',
     duration: '',
     description: '',
+    imageUrl: '',
     followUpDays: 0,
     branch: 'SALON',
     isActive: true
@@ -78,6 +79,7 @@ export default function Services() {
         category: service.category || (categories[0]?.name || ''),
         duration: service.duration || '',
         price: service.price || '',
+        imageUrl: service.imageUrl || '',
         branch: service.branch || 'SALON',
         followUpDays: service.followUpDays || 0,
         isActive: service.isActive !== undefined ? service.isActive : true
@@ -90,6 +92,7 @@ export default function Services() {
         price: '',
         duration: '',
         description: '',
+        imageUrl: '',
         followUpDays: 0,
         branch: 'SALON',
         isActive: true
@@ -438,6 +441,17 @@ export default function Services() {
             />
           </div>
           
+          <div>
+            <label style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', display: 'block' }}>Service Image URL (Optional)</label>
+            <input 
+              type="url"
+              className={styles.input}
+              placeholder="https://images.unsplash.com/... or image link"
+              value={formData.imageUrl}
+              onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+            />
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input 
               type="checkbox"

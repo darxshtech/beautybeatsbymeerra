@@ -56,7 +56,22 @@ export default function HomePage() {
   const [services, setServices] = useState<any[]>(fallbackServices);
   const [heroSlides, setHeroSlides] = useState<any[]>(slides);
   const [signatureHeader, setSignatureHeader] = useState<{ title?: string; subtitle?: string } | null>(null);
+  const [signatureItems, setSignatureItems] = useState<any[]>([]);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  const getServiceFallbackImage = (category: string = '', name: string = '') => {
+    const text = `${category} ${name}`.toLowerCase();
+    if (text.includes('skin') || text.includes('facial') || text.includes('clean up') || text.includes('peel')) {
+      return 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80';
+    }
+    if (text.includes('hair') || text.includes('cut') || text.includes('color') || text.includes('spa')) {
+      return 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80';
+    }
+    if (text.includes('bridal') || text.includes('makeup') || text.includes('artistry')) {
+      return 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80';
+  };
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -90,6 +105,11 @@ export default function HomePage() {
             const sigHeader = json.data.find((item: any) => item.type === 'SIGNATURE_SERVICES_HEADER');
             if (sigHeader) {
                setSignatureHeader({ title: sigHeader.title, subtitle: sigHeader.subtitle });
+            }
+
+            const sigItems = json.data.filter((item: any) => item.type === 'SIGNATURE_SERVICE_ITEM');
+            if (sigItems.length > 0) {
+               setSignatureItems(sigItems);
             }
          }
       } catch (err) {}
@@ -193,29 +213,44 @@ export default function HomePage() {
           </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((s, i) => (
-              <motion.div 
-                key={i}
-                whileHover={{ y: -10 }}
-                className="bg-white rounded-[40px] shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col items-center group overflow-hidden"
-              >
-                <div className="w-full h-48 relative overflow-hidden">
-                   <img src={s.imageUrl || `/images/${s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up') ? 'skin' : s.category?.toLowerCase().includes('hair') ? 'hair' : 'bridal'}.png`} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                   <div className="absolute inset-0 bg-black/10" />
-                </div>
-                <div className="p-10 flex flex-col items-center">
-                   <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-primary mb-6 -mt-16 relative z-10 shadow-lg">
-                      {s.category?.toLowerCase().includes('hair') ? <Scissors className="w-8 h-8" /> : (s.category?.toLowerCase().includes('skin') || s.category?.toLowerCase().includes('facial') || s.category?.toLowerCase().includes('clean up')) ? <Sparkles className="w-8 h-8" /> : <Award className="w-8 h-8" />}
-                   </div>
-                   <h3 className="text-2xl font-black mb-4">{s.name}</h3>
-                   <p className="text-gray-500 mb-8 line-clamp-2">{s.description}</p>
-                   <p className="text-3xl font-black text-primary mb-6">₹{s.price}</p>
-                   <Link href="/book" className="text-primary font-black flex items-center gap-1 hover:gap-2 transition-all">
-                      Book Now <ChevronRight className="w-5 h-5" />
-                   </Link>
-                </div>
-              </motion.div>
-            ))}
+            {(signatureItems.length > 0 ? signatureItems : services).map((s, i) => {
+              const name = s.title || s.name || 'Signature Service';
+              const description = s.subtitle || s.description || 'Premium salon treatment';
+              const category = s.category || name;
+              const price = s.price || '';
+              const imgSrc = s.imageUrl || getServiceFallbackImage(category, name);
+
+              return (
+                <motion.div 
+                  key={i}
+                  whileHover={{ y: -10 }}
+                  className="bg-white rounded-[40px] shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col items-center group overflow-hidden"
+                >
+                  <div className="w-full h-48 relative overflow-hidden bg-gray-100">
+                     <img 
+                       src={imgSrc} 
+                       alt={name} 
+                       onError={(e) => {
+                         e.currentTarget.src = getServiceFallbackImage(category, name);
+                       }}
+                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                     />
+                     <div className="absolute inset-0 bg-black/10" />
+                  </div>
+                  <div className="p-10 flex flex-col items-center">
+                     <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-primary mb-6 -mt-16 relative z-10 shadow-lg">
+                        {category?.toLowerCase().includes('hair') ? <Scissors className="w-8 h-8" /> : (category?.toLowerCase().includes('skin') || category?.toLowerCase().includes('facial') || category?.toLowerCase().includes('clean up')) ? <Sparkles className="w-8 h-8" /> : <Award className="w-8 h-8" />}
+                     </div>
+                     <h3 className="text-2xl font-black mb-4">{name}</h3>
+                     <p className="text-gray-500 mb-8 line-clamp-2">{description}</p>
+                     {price && <p className="text-3xl font-black text-primary mb-6">{typeof price === 'number' ? `₹${price}` : price.startsWith('₹') ? price : `₹${price}`}</p>}
+                     <Link href="/book" className="text-primary font-black flex items-center gap-1 hover:gap-2 transition-all">
+                        Book Now <ChevronRight className="w-5 h-5" />
+                     </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
