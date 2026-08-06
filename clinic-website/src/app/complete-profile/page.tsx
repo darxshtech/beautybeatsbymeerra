@@ -19,6 +19,7 @@ export default function CompleteProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       const { skinType, ...rest } = formData;
       await completeProfile({
@@ -27,7 +28,7 @@ export default function CompleteProfile() {
       });
       router.push('/profile');
     } catch (err: any) {
-      setError('Failed to update profile');
+      setError(err.message || 'Failed to update profile');
     }
   };
 

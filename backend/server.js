@@ -16,7 +16,8 @@ const app = express();
 
 // Apply security headers
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 }));
 
 // Rate limiting to prevent DDoS

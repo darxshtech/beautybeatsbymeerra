@@ -103,9 +103,10 @@ exports.updateUserProfile = async (req, res, next) => {
     
     res.status(200).json(response);
   } catch (err) {
-    if (err.code === 11000 || (err.name === 'MongoServerError' && err.message.includes('E11000'))) {
-      const field = Object.keys(err.keyPattern || {})[0] || 'field';
-      return res.status(400).json({ success: false, message: `A user with this ${field} already exists.` });
+    if (err.code === 11000 || (err.name === 'MongoServerError' && err.message?.includes('E11000'))) {
+      const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : (err.keyValue ? Object.keys(err.keyValue)[0] : 'phone or email');
+      const msg = `A user with this ${field} already exists.`;
+      return res.status(400).json({ success: false, error: msg, message: msg });
     }
     next(err);
   }

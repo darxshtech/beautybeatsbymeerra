@@ -108,7 +108,7 @@ class CustomerService {
       throw new ErrorResponse('Customer not found', 404);
     }
 
-    // Handle dateOfBirth -> birthday mapping
+    // Handle dateOfBirth & birthday mapping
     if (data.dateOfBirth !== undefined) {
       if (data.dateOfBirth && data.dateOfBirth !== '') {
         data.birthday = new Date(data.dateOfBirth);
@@ -116,10 +116,25 @@ class CustomerService {
         data.birthday = null;
       }
       delete data.dateOfBirth;
+    } else if (data.birthday !== undefined) {
+      if (data.birthday && data.birthday !== '') {
+        data.birthday = new Date(data.birthday);
+      } else {
+        data.birthday = null;
+      }
     }
 
-    // Remove empty string fields that would fail validation
+    // Handle phone string formatting and empty string -> null conversion
+    if (typeof data.phone === 'string') {
+      data.phone = data.phone.trim();
+      if (data.phone === '') data.phone = null;
+    }
+
+    // Remove empty string fields that would fail validation or Mongoose type casting
     if (data.anniversary === '') data.anniversary = null;
+    if (data.email === '') data.email = null;
+    if (data.whatsappNumber === '') data.whatsappNumber = null;
+    if (data.address === '') data.address = null;
 
     customer = await User.findByIdAndUpdate(id, data, {
       new: true,

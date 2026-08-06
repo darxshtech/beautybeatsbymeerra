@@ -25,7 +25,7 @@ const customerValidator = {
     const schema = Joi.object({
       name: Joi.string().min(2).max(50),
       email: Joi.string().email().allow('', null),
-      phone: Joi.string(),
+      phone: Joi.string().allow('', null),
       whatsappNumber: Joi.string().allow('', null),
       address: Joi.string().allow('', null),
       skinType: Joi.string().allow('', null),

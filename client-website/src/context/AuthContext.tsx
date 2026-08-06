@@ -72,11 +72,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const completeProfile = async (data: any) => {
-    const res = await apiClient.put('/users/profile', { ...data, isProfileComplete: true });
-    if (res.data.success) {
-      setUser(res.data.data);
-    } else {
-      throw new Error(res.data.error || 'Profile completion failed');
+    try {
+      const res = await apiClient.put('/users/profile', { ...data, isProfileComplete: true });
+      if (res.data.success) {
+        setUser(res.data.data);
+      } else {
+        throw new Error(res.data.error || res.data.message || 'Profile completion failed');
+      }
+    } catch (err: any) {
+      const serverMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Profile completion failed';
+      throw new Error(serverMessage);
     }
   };
 
