@@ -173,7 +173,7 @@ export default function BookingPage() {
       });
 
       if (res.data.success) {
-        setStep(5); // Move to Success/Confirm step
+        setStep(6); // Move to Success/Confirm step
       } else {
         setError(res.data.message || "Booking failed");
       }

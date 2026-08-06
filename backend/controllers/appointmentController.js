@@ -46,8 +46,25 @@ exports.getAvailability = async (req, res, next) => {
 
     console.log(`Checking availability for ${date}. Today? ${isToday}. Total Staff: ${staffList.length}`);
 
-    // For each slot, check if ANY staff member is both scheduled and free
+    // Batch query: Fetch ALL non-cancelled appointments for this date in ONE single query
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const { excludeAppId } = req.query;
+    const apptQuery = {
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $nin: ['CANCELLED', 'NOSHOW'] }
+    };
+    if (excludeAppId && require('mongoose').Types.ObjectId.isValid(excludeAppId)) {
+      apptQuery._id = { $ne: excludeAppId };
+    }
+
+    const existingAppointments = await Appointment.find(apptQuery).select('staff timeSlot').lean();
+    const busySet = new Set(existingAppointments.map(a => `${a.staff ? a.staff.toString() : ''}_${a.timeSlot}`));
+
+    // For each slot, check if ANY staff member is both scheduled and free
     for (const slot of slots) {
       let available = false;
 
@@ -63,7 +80,6 @@ exports.getAvailability = async (req, res, next) => {
         slotTimeIST.setHours(h, parseInt(minutes), 0, 0);
         
         if (slotTimeIST < nowIST) {
-          console.log(`Slot ${slot} is in the past. marking unavailable.`);
           availabilityList.push({ slot, available: false });
           continue;
         }
@@ -92,8 +108,8 @@ exports.getAvailability = async (req, res, next) => {
 
         for (let i = 0; i < slotsNeeded; i++) {
           const slotToCheck = slots[slotIndex + i];
-          const isFree = await AppointmentService.isStaffAvailable(s._id, date, slotToCheck, excludeAppId);
-          if (!isFree) {
+          const isBusy = busySet.has(`${s._id.toString()}_${slotToCheck}`);
+          if (isBusy) {
             canAccommodate = false;
             break;
           }
