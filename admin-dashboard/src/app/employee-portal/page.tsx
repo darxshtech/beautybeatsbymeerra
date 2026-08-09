@@ -102,7 +102,7 @@ export default function EmployeePortal() {
         const sorted = [...res.data].sort((a,b) => a.timeSlot.localeCompare(b.timeSlot));
         if (sorted.length > appointments.length && appointments.length > 0) {
           const newest = sorted[sorted.length - 1];
-          speakNotification(`Attention. New customer assigned. ${newest.customer?.name || 'A customer'} for ${newest.services?.map(s => s.name).join(', ') || 'service'}.`);
+          speakNotification(`Attention. New customer assigned. ${newest.customer?.name || 'A customer'} for ${newest.services?.map((s: any) => s.name).join(', ') || 'service'}.`);
         }
         setAppointments(sorted);
       }
@@ -333,7 +333,7 @@ export default function EmployeePortal() {
                   <div>
                     <h4 style={{ fontSize: '1.35rem', fontWeight: 900 }}>{app.customer?.name}</h4>
                     <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                      {app.services?.map(s => s.name).join(', ') || 'No Service'} • ₹{app.services?.reduce((sum, s) => sum + s.price, 0) || 0}
+                      {app.services?.map((s: any) => s.name).join(', ') || 'No Service'} • ₹{app.services?.reduce((sum: number, s: any) => sum + s.price, 0) || 0}
                     </p>
                     
                     <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', marginBottom: '0.85rem', color: 'var(--text-muted)' }}>
