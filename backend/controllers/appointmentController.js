@@ -36,15 +36,17 @@ exports.getAvailability = async (req, res, next) => {
       staffList = await User.find({ role: { $in: ['STAFF', 'ADMIN'] }, isOff: { $ne: true } });
     }
 
+    // Server-timezone-independent IST date & time calculation
     const now = new Date();
-    // Use IST for accurate time comparison
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const nowIST = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
-    
-    const requestedDate = new Date(date);
-    const isToday = requestedDate.toDateString() === nowIST.toDateString();
+    const istDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
+    const istTimeString = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: false }); // HH:MM:SS
+    const [currentHour, currentMinute] = istTimeString.split(':').map(Number);
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
 
-    console.log(`Checking availability for ${date}. Today? ${isToday}. Total Staff: ${staffList.length}`);
+    const reqDateFormatted = new Date(date).toISOString().split('T')[0];
+    const isToday = reqDateFormatted === istDateString;
+
+    console.log(`Checking availability for ${date} (formatted: ${reqDateFormatted}). Today in IST (${istDateString})? ${isToday}. Current IST time: ${istTimeString}. Staff count: ${staffList.length}`);
 
     // Batch query: Fetch ALL non-cancelled appointments for this date in ONE single query
     const startOfDay = new Date(date);
@@ -68,18 +70,16 @@ exports.getAvailability = async (req, res, next) => {
     for (const slot of slots) {
       let available = false;
 
-      // 1. If it's today, filter out past slots based on IST
+      // 1. If it's today, filter out past slots based on IST current time
       if (isToday) {
         const [timePart, ampm] = slot.split(' ');
         const [hours, minutes] = timePart.split(':');
         let h = parseInt(hours);
         if (ampm === 'PM' && h < 12) h += 12;
         if (ampm === 'AM' && h === 12) h = 0;
-        
-        const slotTimeIST = new Date(nowIST);
-        slotTimeIST.setHours(h, parseInt(minutes), 0, 0);
-        
-        if (slotTimeIST < nowIST) {
+        const slotTotalMinutes = h * 60 + parseInt(minutes);
+
+        if (slotTotalMinutes <= currentTotalMinutes) {
           availabilityList.push({ slot, available: false });
           continue;
         }
@@ -92,7 +92,7 @@ exports.getAvailability = async (req, res, next) => {
         // 2. Check if staff works on this day/time (if schedule exists)
         if (s.availability && s.availability.length > 0) {
           const daySchedule = s.availability.find(a => a.day === dayName);
-          if (!daySchedule || !daySchedule.slots.includes(slot)) {
+          if (!daySchedule || !daySchedule.slots || !daySchedule.slots.includes(slot)) {
             continue; // Doesn't work this slot
           }
         }
