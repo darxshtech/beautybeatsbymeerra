@@ -191,7 +191,7 @@ export default function ProfilePage() {
                                <History className="w-8 h-8" />
                             </div>
                             <div>
-                               <h4 className="text-xl font-black">{b.service?.name || 'Unspecified Service'}</h4>
+                               <h4 className="text-xl font-black">{b.services?.map((s: any) => s.name).join(', ') || b.service?.name || 'Service'}</h4>
                                <p className="text-sm text-gray-500 font-bold">{new Date(b.appointmentDate).toLocaleDateString()} • {b.timeSlot}</p>
                             </div>
                          </div>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                             )}>
                               {b.status}
                             </span>
-                            <p className="text-xl font-black text-gray-900 mb-2">₹{b.service?.price || 0}</p>
+                            <p className="text-xl font-black text-gray-900 mb-2">₹{b.billing?.total ?? (b.services?.reduce((sum: number, s: any) => sum + (s.price || 0), 0) || b.service?.price || 0)}</p>
                             {(b.status === 'PENDING' || b.status === 'CONFIRMED') && (() => {
                                const appDate = new Date(b.appointmentDate);
                                const [time, ampm] = b.timeSlot.split(' ');
