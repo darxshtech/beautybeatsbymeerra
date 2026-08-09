@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import styles from '@/styles/layout/Dashboard.module.css';
 import { CreditCard, CheckCircle2, IndianRupee, AlertTriangle, ShieldCheck } from 'lucide-react';
@@ -14,15 +14,23 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose, appointment, onSuccess }: PaymentModalProps) {
+  const totalServicePrice = appointment?.services?.reduce((sum: number, s: any) => sum + (s.price || 0), 0) || 0;
+  
   const [formData, setFormData] = useState({
     paymentMethod: "CASH",
-    amount: (appointment?.service?.price || 0).toString(),
+    amount: totalServicePrice.toString(),
     transactionId: "",
     paymentVerified: false,
     splitCashAmount: "",
     splitUpiAmount: ""
   });
   const [loading, setLoading] = useState(false);
+
+  // Re-calculate amount when appointment changes
+  useEffect(() => {
+    const price = appointment?.services?.reduce((sum: number, s: any) => sum + (s.price || 0), 0) || 0;
+    setFormData(prev => ({ ...prev, amount: price.toString() }));
+  }, [appointment]);
 
   const requiresVerification = formData.paymentMethod === 'UPI' || formData.paymentMethod === 'CARD' || formData.paymentMethod === 'SPLIT';
 

@@ -73,7 +73,11 @@ class DashboardService {
     .sort({ appointmentDate: 1, timeSlot: 1 })
     .limit(5)
     .populate('customer', 'name phone')
-    .populate('services', 'name');
+    .populate('services', 'name')
+    .populate({
+      path: 'billing',
+      select: 'items total'
+    });
 
     // 3. Notifications/Action Required
     const notifications = [];
@@ -139,14 +143,22 @@ class DashboardService {
           appointmentsToday: appointmentsTodayCount,
           activeCustomers
         },
-        upcomingAppointments: upcomingAppointments.map(app => ({
-          id: app._id,
-          customer: app.customer?.name || 'Guest',
-          service: app.services?.map(s => s.name).join(', ') || 'Service',
-          time: app.timeSlot,
-          status: app.status === 'IN-PROGRESS' ? 'In-Progress' : (app.status === 'PENDING' ? 'Booked' : app.status),
-          statusRaw: app.status
-        })),
+        upcomingAppointments: upcomingAppointments.map(app => {
+          // Try populated services first, then billing items as fallback
+          const serviceNames = app.services?.filter(s => s?.name).map(s => s.name);
+          const billingItemNames = app.billing?.items?.map(i => i.name);
+          const serviceName = (serviceNames?.length ? serviceNames.join(', ') : null)
+            || (billingItemNames?.length ? billingItemNames.join(', ') : null)
+            || 'Service';
+          return {
+            id: app._id,
+            customer: app.customer?.name || 'Guest',
+            service: serviceName,
+            time: app.timeSlot,
+            status: app.status === 'IN-PROGRESS' ? 'In-Progress' : (app.status === 'PENDING' ? 'Booked' : app.status),
+            statusRaw: app.status
+          };
+        }),
         recentTransactions: recentBillings.map(bill => ({
           id: bill._id,
           customer: bill.customer?.name || 'Guest',

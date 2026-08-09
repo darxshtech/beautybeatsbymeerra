@@ -97,7 +97,7 @@ exports.updateBillStatus = async (req, res, next) => {
 };
 
 /**
- * @desc    Send bill to customer via WhatsApp
+ * @desc    Send bill to customer & admin via WhatsApp (wa.me manual links)
  * @route   POST /api/billing/:id/send
  * @access  Private/Admin/Staff
  */
@@ -120,51 +120,30 @@ exports.sendBillWhatsApp = async (req, res, next) => {
     }
 
     let invoiceUrl = bill.invoiceUrl || null;
-    let autoSendSuccess = false;
 
-    // 1. Try to Generate & Upload PDF Invoice to Cloudinary
+    // 1. Generate & Upload PDF Invoice to Cloudinary
     try {
       const InvoicePdfService = require('../services/notification/InvoicePdfService');
       invoiceUrl = await InvoicePdfService.generateAndUploadInvoice(bill);
       bill.invoiceUrl = invoiceUrl;
       await bill.save();
     } catch (pdfErr) {
-      console.error('[BILLING] PDF/Cloudinary Upload skipped or failed:', pdfErr.message);
+      console.error('[BILLING] PDF/Cloudinary Upload failed:', pdfErr.message);
     }
 
-    // Fallback: If Cloudinary upload failed or wasn't configured, use direct backend PDF route
+    // Fallback: use direct backend PDF route
     if (!invoiceUrl) {
-      const host = req.get('host');
-      const protocol = req.protocol || 'https';
-      invoiceUrl = `${protocol}://${host}/api/billing/${bill._id}/pdf`;
+      invoiceUrl = `${process.env.SERVER_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com'}/api/billing/${bill._id}/pdf`;
       bill.invoiceUrl = invoiceUrl;
       await bill.save().catch(() => {});
     }
 
-    // 2. Try to Send PDF to Customer's WhatsApp via Meta Graph API
+    // 2. Build WhatsApp message with PDF link
     const brandName = bill.branch === 'CLINIC' ? 'BeautyBeats Clinic' : 'BeautyBeats';
     const clientWebsiteUrl = bill.branch === 'CLINIC' 
       ? (process.env.CLINIC_WEBSITE_URL || 'https://beautybeatsbymeerra.vercel.app/')
       : (process.env.CLIENT_WEBSITE_URL || 'https://beautybeatsbymeerra.vercel.app/');
 
-    if (invoiceUrl) {
-      try {
-        const WhatsappService = require('../services/notification/WhatsappService');
-        const customerCaption = `Hi ${bill.customer?.name || 'Customer'}, thank you for your visit! Here is your official invoice from ${brandName}.\n\nVisit us: ${clientWebsiteUrl}`;
-        const waRes = await WhatsappService.sendDocumentMessage(phone, invoiceUrl, `Invoice_${bill._id.toString().substring(0, 8).toUpperCase()}.pdf`, customerCaption);
-        if (waRes?.success) autoSendSuccess = true;
-
-        const adminPhone = process.env.ADMIN_PHONE;
-        if (adminPhone) {
-          const adminCaption = `Admin Copy: Invoice generated for ${bill.customer?.name || 'Customer'} (Total: ₹${bill.total}).`;
-          await WhatsappService.sendDocumentMessage(adminPhone, invoiceUrl, `INV_${bill._id.toString().substring(0, 8).toUpperCase()}_${(bill.customer?.name || 'Customer').replace(/\s/g, '_')}.pdf`, adminCaption);
-        }
-      } catch (waErr) {
-        console.error('[BILLING] Meta WhatsApp API auto-send failed:', waErr.message);
-      }
-    }
-
-    // Build manual WhatsApp wa.me redirect message with direct PDF invoice link & client website URL
     const itemsList = (bill.items || []).map(i => `• ${i.name} — ₹${i.price}`).join('\n');
     const msg = [
       `🧾 *${brandName} Official Invoice*`,
@@ -184,13 +163,34 @@ exports.sendBillWhatsApp = async (req, res, next) => {
       `⭐ Thank you for choosing ${brandName}! See you soon.`,
     ].filter(Boolean).join('\n');
 
+    // 3. Build wa.me URL for customer
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const whatsappUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    const customerWhatsappUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`;
+
+    // 4. Build wa.me URL for admin
+    let adminWhatsappUrl = null;
+    const adminPhone = process.env.ADMIN_PHONE;
+    if (adminPhone) {
+      const cleanAdminPhone = adminPhone.replace(/\D/g, '').slice(-10);
+      const adminMsg = [
+        `🧾 *${brandName} — Admin Invoice Copy*`,
+        ``,
+        `Customer: *${bill.customer?.name || 'Customer'}* (${phone})`,
+        itemsList ? `\n*Services / Items:*\n${itemsList}` : '',
+        `\n*Total:* ₹${bill.total}`,
+        `*Payment:* ${bill.paymentMethod || 'CASH'}`,
+        ``,
+        `📄 *PDF Invoice:*`,
+        `${invoiceUrl}`,
+      ].filter(Boolean).join('\n');
+      adminWhatsappUrl = `https://wa.me/91${cleanAdminPhone}?text=${encodeURIComponent(adminMsg)}`;
+    }
 
     return res.status(200).json({ 
       success: true, 
-      message: autoSendSuccess ? 'Invoice PDF sent automatically via WhatsApp!' : 'Invoice PDF ready to send via WhatsApp.',
-      whatsappUrl,
+      message: 'Invoice ready. Send to customer & admin via WhatsApp.',
+      customerWhatsappUrl,
+      adminWhatsappUrl,
       invoiceUrl,
       formattedMessage: msg
     });

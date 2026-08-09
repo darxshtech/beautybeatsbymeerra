@@ -80,8 +80,17 @@ export default function Billing() {
     setSendingId(id);
     try {
       const res = await apiRequest(`/billing/${id}/send`, { method: 'POST' });
-      if (res.success && res.whatsappUrl) {
-        window.open(res.whatsappUrl, '_blank');
+      if (res.success) {
+        // Open customer WhatsApp chat
+        if (res.customerWhatsappUrl) {
+          window.open(res.customerWhatsappUrl, '_blank');
+        }
+        // Open admin WhatsApp chat (slight delay so browser doesn't block second popup)
+        if (res.adminWhatsappUrl) {
+          setTimeout(() => {
+            window.open(res.adminWhatsappUrl, '_blank');
+          }, 500);
+        }
       }
     } catch (err: any) {
       alert(err.message || 'Failed to generate bill link');
@@ -283,48 +292,51 @@ export default function Billing() {
                fontSize: '11px', fontWeight: 800, textTransform: 'uppercase'
              }}>{val.paymentStatus}</span>
           )},
-          { key: 'actions', label: 'Actions', render: (val: any) => (
-             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {val.paymentStatus !== 'PAID' && (
-                  <button 
-                    className={styles.pageBtn} 
-                    style={{ padding: '6px 12px', color: '#34C759', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700 }} 
-                    title="Mark as Paid"
-                    onClick={() => handleUpdateStatus(val._id, 'PAID')}
-                  >
-                     <CheckCircle size={14} /> Paid
-                  </button>
-                )}
-                <button 
-                  className={styles.pageBtn} 
-                  style={{ 
-                    padding: '6px 12px', color: 'white', background: '#25D366', 
-                    borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', 
-                    fontSize: '11px', fontWeight: 700, border: 'none', cursor: 'pointer',
-                    opacity: sendingId === val._id ? 0.5 : 1
-                  }} 
-                  title="Send Bill via WhatsApp"
-                  onClick={() => handleSendBill(val._id)}
-                  disabled={sendingId === val._id}
-                >
-                   <Send size={12} /> {sendingId === val._id ? '...' : 'Send'}
-                </button>
-                <a 
-                  href={`${process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api'}/billing/${val._id}/pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.pageBtn} 
-                  style={{ 
-                    padding: '6px 12px', color: 'var(--primary)', background: 'var(--primary-light)', 
-                    borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', 
-                    fontSize: '11px', fontWeight: 700, textDecoration: 'none'
-                  }} 
-                  title="View / Download PDF Invoice"
-                >
-                   <FileText size={12} /> PDF
-                </a>
-             </div>
-          )}
+          { key: 'actions', label: 'Actions', render: (val: any) => {
+             const pdfUrl = val.invoiceUrl || `${process.env.NEXT_PUBLIC_API_URL || 'https://beautybeatsbymeerra-bdk7.onrender.com/api'}/billing/${val._id}/pdf`;
+             return (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                 {val.paymentStatus !== 'PAID' && (
+                   <button 
+                     className={styles.pageBtn} 
+                     style={{ padding: '6px 12px', color: '#34C759', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700 }} 
+                     title="Mark as Paid"
+                     onClick={() => handleUpdateStatus(val._id, 'PAID')}
+                   >
+                      <CheckCircle size={14} /> Paid
+                   </button>
+                 )}
+                 <button 
+                   className={styles.pageBtn} 
+                   style={{ 
+                     padding: '6px 12px', color: 'white', background: '#25D366', 
+                     borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', 
+                     fontSize: '11px', fontWeight: 700, border: 'none', cursor: 'pointer',
+                     opacity: sendingId === val._id ? 0.5 : 1
+                   }} 
+                   title="Send Bill via WhatsApp"
+                   onClick={() => handleSendBill(val._id)}
+                   disabled={sendingId === val._id}
+                 >
+                    <Send size={12} /> {sendingId === val._id ? '...' : 'Send'}
+                 </button>
+                 <a 
+                   href={pdfUrl}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className={styles.pageBtn} 
+                   style={{ 
+                     padding: '6px 12px', color: 'var(--primary)', background: 'var(--primary-light)', 
+                     borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', 
+                     fontSize: '11px', fontWeight: 700, textDecoration: 'none'
+                   }} 
+                   title="View / Download PDF Invoice"
+                 >
+                    <FileText size={12} /> PDF
+                 </a>
+              </div>
+             );
+          }}
         ]}
         data={bills}
       />
