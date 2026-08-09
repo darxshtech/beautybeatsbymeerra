@@ -65,30 +65,57 @@ exports.getSentHistory = async (req, res, next) => {
 exports.sendBroadcast = async (req, res, next) => {
   try {
     const { target, message } = req.body;
-    
-    // Find users based on target
-    let query = { role: 'CUSTOMER' };
-    if (target === 'VIP') {
-      query.loyaltyPoints = { $gte: 1000 };
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Message content is required' });
     }
-    // Note: UPCOMING logic would ideally query Appointments, then extract customer IDs.
-    // For simplicity, we just fetch customers and simulate the broadcast.
-
-    const users = await User.find(query);
     
-    // Mock sending WhatsApp broadcast by logging SentNotification
-    const sentRecords = users.map(user => ({
+    let users = [];
+    if (target === 'VIP') {
+      users = await User.find({ role: 'CUSTOMER', $or: [{ loyaltyPoints: { $gte: 100 } }, { visitCount: { $gte: 3 } }] });
+    } else if (target === 'UPCOMING') {
+      const Appointment = require('../models/Appointment');
+      const upcoming = await Appointment.find({
+        status: { $in: ['PENDING', 'CONFIRMED'] },
+        appointmentDate: { $gte: new Date() }
+      }).select('customer');
+      const customerIds = upcoming.map(a => a.customer).filter(Boolean);
+      users = await User.find({ _id: { $in: customerIds } });
+    } else {
+      users = await User.find({ role: 'CUSTOMER', phone: { $exists: true, $ne: null } });
+    }
+
+    const broadcastList = users.map(user => {
+      const cleanPhone = (user.phone || '').replace(/\D/g, '').slice(-10);
+      const formattedText = `🌟 *BeautyBeats Special Offer*\n\nHi ${user.name || 'Customer'},\n${message}\n\n👉 Book your session today!`;
+      const whatsappUrl = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(formattedText)}` : null;
+      return {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        whatsappUrl,
+        formattedText
+      };
+    }).filter(b => b.whatsappUrl);
+
+    // Save to SentNotification history
+    const historyRecords = broadcastList.map(item => ({
       type: 'SPECIAL_EVENT',
+      recipient: item.phone,
+      message: item.formattedText,
       status: 'SENT',
-      recipient: user.phone || 'Unknown',
       sentAt: new Date()
     }));
 
-    if (sentRecords.length > 0) {
-      await SentNotification.insertMany(sentRecords);
+    if (historyRecords.length > 0) {
+      await SentNotification.insertMany(historyRecords).catch(e => console.error('Broadcast log error:', e));
     }
 
-    res.status(200).json({ success: true, message: `Broadcast sent to ${users.length} customers` });
+    res.status(200).json({ 
+      success: true, 
+      message: `Broadcast links ready for ${broadcastList.length} customers!`,
+      count: broadcastList.length,
+      data: broadcastList
+    });
   } catch (err) {
     next(err);
   }

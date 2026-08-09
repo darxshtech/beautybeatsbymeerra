@@ -115,16 +115,30 @@ class AppointmentService {
 
     let finalCustomerId = customerId;
 
-    // Handle guest logic if not provided
+    // Handle guest / walk-in customer registration logic if not provided
     if (!finalCustomerId && customerInfo) {
       let user = await User.findOne({ phone: customerInfo.phone });
       if (!user) {
+        const bday = customerInfo.dateOfBirth || customerInfo.birthday;
         user = await User.create({
           name: customerInfo.name || 'Guest Customer',
           phone: customerInfo.phone,
+          email: customerInfo.email || undefined,
+          birthday: bday ? new Date(bday) : undefined,
+          address: customerInfo.address || undefined,
+          whatsappNumber: customerInfo.whatsappNumber || customerInfo.phone,
           role: 'CUSTOMER',
           registrationSource: data.type === 'WALKIN' ? 'WALKIN' : 'ONLINE'
         });
+      } else if (data.type === 'WALKIN') {
+        // Optionally update email/birthday/address if provided and missing
+        let updated = false;
+        if (customerInfo.name && user.name !== customerInfo.name) { user.name = customerInfo.name; updated = true; }
+        if (customerInfo.email && !user.email) { user.email = customerInfo.email; updated = true; }
+        const bday = customerInfo.dateOfBirth || customerInfo.birthday;
+        if (bday && !user.birthday) { user.birthday = new Date(bday); updated = true; }
+        if (customerInfo.address && !user.address) { user.address = customerInfo.address; updated = true; }
+        if (updated) await user.save();
       }
       finalCustomerId = user._id;
     }

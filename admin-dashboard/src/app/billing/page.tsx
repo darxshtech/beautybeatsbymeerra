@@ -45,6 +45,10 @@ export default function Billing() {
   useEffect(() => {
     fetchBills();
     fetchCustomers();
+    const interval = setInterval(() => {
+      fetchBills();
+    }, 25000); // 25s auto-refresh polling
+    return () => clearInterval(interval);
   }, [search]);
 
   // When customer is selected in the form, fetch their recent bills/services

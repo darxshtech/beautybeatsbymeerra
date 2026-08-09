@@ -37,6 +37,26 @@ export default function Appointments() {
     }
   };
 
+  const [knownApptIds, setKnownApptIds] = useState<Set<string>>(new Set());
+
+  const speakNotification = (text: string) => {
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        utterance.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.name.includes('Female') || v.name.includes('Zira'));
+        if (preferred) utterance.voice = preferred;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {
+      console.log('Speech not available');
+    }
+  };
+
   const fetchData = async () => {
     try {
       const [appts, custs, servs] = await Promise.all([
@@ -44,7 +64,24 @@ export default function Appointments() {
         apiRequest('/users/customers?limit=100'),
         apiRequest('/services?limit=100')
       ]);
-      if (appts.success) setAppointments(appts.data);
+      if (appts.success) {
+        const fetchedList = appts.data || [];
+        setKnownApptIds(prev => {
+          if (prev.size > 0) {
+            fetchedList.forEach((a: any) => {
+              if (!prev.has(a._id)) {
+                const sName = a.services?.map((s: any) => s.name).join(', ') || 'service';
+                speakNotification(`Attention! New appointment booked for ${a.customer?.name || 'customer'} for ${sName} at ${a.timeSlot || 'slot'}.`);
+              }
+            });
+          }
+          const newSet = new Set<string>();
+          fetchedList.forEach((a: any) => newSet.add(a._id));
+          return newSet;
+        });
+
+        setAppointments(fetchedList);
+      }
       if (custs.success) setCustomers(custs.data);
       if (servs.success) setServices(servs.data);
     } catch (err) {
@@ -54,6 +91,10 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData();
+    }, 20000); // 20s auto-refresh polling
+    return () => clearInterval(interval);
   }, [search]);
 
   const handleStatusChange = async (id: string, status: string) => {

@@ -95,6 +95,9 @@ export default function Notifications() {
     }
   };
 
+  const [broadcastResults, setBroadcastResults] = useState<any[]>([]);
+  const [showBroadcastLauncher, setShowBroadcastLauncher] = useState(false);
+
   const handleTrigger = async (note: any) => {
     setSending(note.id);
     try {
@@ -103,10 +106,12 @@ export default function Notifications() {
         body: { type: note.type, metadata: note.metadata }
       });
       if (res.success) {
-        alert(`✅ ${res.message}`);
+        if (res.whatsappUrl) {
+          window.open(res.whatsappUrl, '_blank');
+        }
         setNotifications(notifications.filter(n => n.id !== note.id));
       } else {
-        alert(`❌ ${res.message || 'Failed to send'}`);
+        alert(`❌ ${res.message || 'Failed to trigger'}`);
       }
     } catch (err: any) {
       alert(`❌ Failed: ${err.message || 'Network error'}`);
@@ -118,7 +123,6 @@ export default function Notifications() {
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastData.message) return alert("Message cannot be empty");
-    if (!confirm('This will send a WhatsApp message to ' + broadcastData.target + ' customers. Continue?')) return;
     
     setSendingBroadcast(true);
     try {
@@ -126,10 +130,10 @@ export default function Notifications() {
         method: 'POST',
         body: broadcastData
       });
-      if (res.success) {
-        alert('✅ Broadcast sent successfully');
+      if (res.success && res.data) {
+        setBroadcastResults(res.data);
         setIsBroadcastModalOpen(false);
-        setBroadcastData({ message: '', target: 'ALL' });
+        setShowBroadcastLauncher(true);
         if (showHistory) fetchHistory();
       } else {
         alert(`❌ ${res.message || 'Failed to broadcast'}`);
@@ -445,6 +449,48 @@ export default function Notifications() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Broadcast Launcher Modal */}
+      {showBroadcastLauncher && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div className={cardStyles.card} style={{ width: '100%', maxWidth: '600px', padding: '24px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800 }}>Broadcast Ready ({broadcastResults.length} Customers)</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Click "Send" next to each customer to open pre-filled WhatsApp offer chat.</p>
+              </div>
+              <button onClick={() => setShowBroadcastLauncher(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', fontWeight: 900 }}>✕</button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+              {broadcastResults.map((item, idx) => (
+                <div key={idx} style={{ padding: '12px 16px', background: 'var(--bg-main)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-light)' }}>
+                  <div>
+                    <p style={{ fontWeight: 800, fontSize: '14px' }}>{item.name || 'Customer'}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.phone}</p>
+                  </div>
+                  <button
+                    onClick={() => window.open(item.whatsappUrl, '_blank')}
+                    style={{
+                      background: '#25D366', color: 'white', border: 'none', padding: '8px 16px',
+                      borderRadius: '8px', fontWeight: 800, fontSize: '12px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                  >
+                    <Send size={14} /> Send WhatsApp
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '16px', textAlign: 'right' }}>
+              <button onClick={() => setShowBroadcastLauncher(false)} style={{ padding: '10px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -189,9 +189,10 @@ class NotificationService {
     }
 
     if (phone && message) {
-      const result = await WhatsappService.sendMessage(phone, message);
+      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      const whatsappUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`;
       
-      // Corrected idSource to match getNotifications IDs
+      // Record in sent history
       let idSource = '';
       if (type === 'SPECIAL_EVENT') {
         idSource = metadata.eventType === 'Birthday' ? `bday-${metadata.userId}` : `anniv-${metadata.userId}`;
@@ -210,7 +211,7 @@ class NotificationService {
           { 
             type, 
             recipient: phone, 
-            status: result.success ? 'SENT' : 'FAILED',
+            status: 'SENT',
             message: message,
             sentAt: new Date()
           },
@@ -218,10 +219,12 @@ class NotificationService {
         ).catch(e => console.error('Sent recording error:', e));
       }
 
-      if (result.success) {
-        return { success: true, message: result.message || `Notification sent to ${phone} via WhatsApp.` };
-      }
-      return { success: false, message: `Failed to send WhatsApp: ${result.error}` };
+      return { 
+        success: true, 
+        message: `WhatsApp chat ready for ${metadata.customerName || phone}!`,
+        whatsappUrl,
+        formattedMessage: message
+      };
     }
 
     return { success: false, message: `Could not trigger ${type}. Missing phone or message content.` };

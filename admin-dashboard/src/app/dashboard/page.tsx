@@ -20,12 +20,47 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+  const [knownApptIds, setKnownApptIds] = useState<Set<string>>(new Set());
 
-  const fetchDashboardData = async () => {
+  const speakNotification = (text: string) => {
     try {
-      setLoading(true);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        utterance.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.name.includes('Female') || v.name.includes('Zira'));
+        if (preferred) utterance.voice = preferred;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {
+      console.log('Speech not available');
+    }
+  };
+
+  const fetchDashboardData = async (isInitial = false) => {
+    try {
+      if (isInitial) setLoading(true);
       const json = await apiRequest('/dashboard/stats');
       if (json.success) {
+        const upcoming = json.data?.upcomingAppointments || [];
+        
+        // Voice alert for new appointments
+        setKnownApptIds(prev => {
+          if (prev.size > 0) {
+            upcoming.forEach((apt: any) => {
+              if (!prev.has(apt.id)) {
+                speakNotification(`Attention! New appointment booked for ${apt.customer || 'a customer'} for ${apt.service || 'service'} at ${apt.time || 'scheduled time'}.`);
+              }
+            });
+          }
+          const newSet = new Set<string>();
+          upcoming.forEach((apt: any) => newSet.add(apt.id));
+          return newSet;
+        });
+
         setData(json.data);
         setError(null);
       } else {
@@ -35,12 +70,16 @@ export default function DashboardPage() {
       console.error('Error fetching dashboard stats:', err);
       setError(err.message || 'Error connecting to server');
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(true);
+    const interval = setInterval(() => {
+      fetchDashboardData(false);
+    }, 20000); // 20s auto-refresh polling
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -59,7 +98,7 @@ export default function DashboardPage() {
           <h4 className="font-bold">Failed to load dashboard</h4>
           <p className="text-sm">{error}</p>
           <button 
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData(true)}
             className="mt-2 text-xs font-semibold underline hover:no-underline"
           >
             Try Again

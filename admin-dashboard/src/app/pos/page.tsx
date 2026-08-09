@@ -25,6 +25,10 @@ export default function POSPage() {
       }
     };
     fetchServices();
+    const interval = setInterval(() => {
+      fetchServices();
+    }, 25000); // 25s auto-refresh polling
+    return () => clearInterval(interval);
   }, []);
 
   const searchCustomer = async () => {
@@ -35,7 +39,7 @@ export default function POSPage() {
       if (res.success && res.data.length > 0) {
         setCustomer(res.data[0]);
       } else {
-        setCustomer({ name: '', phone: phoneNumber, isNew: true });
+        setCustomer({ name: '', phone: phoneNumber, email: '', dateOfBirth: '', address: '', isNew: true });
       }
     } catch (err) {
       console.error(err);
@@ -55,6 +59,7 @@ export default function POSPage() {
 
   const handleBooking = async () => {
     if (!selectedService || !phoneNumber) return alert("Please select service and customer");
+    if (customer?.isNew && !customer?.name) return alert("Please enter client full name");
     
     try {
       const payload = {
@@ -62,7 +67,13 @@ export default function POSPage() {
         appointmentDate: new Date().toISOString().split('T')[0],
         timeSlot: 'Immediate',
         type: 'WALKIN',
-        customerInfo: customer.isNew ? { name: customer.name, phone: phoneNumber } : undefined,
+        customerInfo: customer.isNew ? { 
+          name: customer.name, 
+          phone: phoneNumber,
+          email: customer.email,
+          dateOfBirth: customer.dateOfBirth,
+          address: customer.address 
+        } : undefined,
         customerId: customer.isNew ? undefined : customer._id,
         pointsRedeemed: redeemPoints ? customer?.loyaltyPoints : 0
       };
@@ -192,21 +203,72 @@ export default function POSPage() {
               }}>
                 <div>
                   {customer.isNew ? (
-                    <div>
-                      <span style={{ 
-                        background: '#FF9500', color: 'white', padding: '3px 10px', 
-                        borderRadius: '8px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase'
-                      }}>New Client</span>
-                      <input 
-                        placeholder="Full Name" 
-                        value={customer.name}
-                        onChange={(e) => setCustomer({...customer, name: e.target.value})}
-                        style={{ 
-                          display: 'block', width: '100%', padding: '10px 14px', borderRadius: '10px',
-                          border: '1px solid var(--border-light)', marginTop: '10px', fontWeight: 700,
-                          fontSize: '14px', outline: 'none'
-                        }}
-                      />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ 
+                          background: '#FF9500', color: 'white', padding: '3px 10px', 
+                          borderRadius: '8px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase'
+                        }}>New Walk-in Client</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Fill customer details below to register</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Full Name *</label>
+                          <input 
+                            required
+                            placeholder="e.g. Ananya Sharma" 
+                            value={customer.name}
+                            onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                            style={{ 
+                              display: 'block', width: '100%', padding: '10px 14px', borderRadius: '10px',
+                              border: '1px solid var(--border-light)', marginTop: '4px', fontWeight: 700,
+                              fontSize: '14px', outline: 'none', background: 'white'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Email (Optional)</label>
+                          <input 
+                            type="email"
+                            placeholder="customer@email.com" 
+                            value={customer.email}
+                            onChange={(e) => setCustomer({...customer, email: e.target.value})}
+                            style={{ 
+                              display: 'block', width: '100%', padding: '10px 14px', borderRadius: '10px',
+                              border: '1px solid var(--border-light)', marginTop: '4px', fontWeight: 700,
+                              fontSize: '14px', outline: 'none', background: 'white'
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Date of Birth (For Birthday Offers)</label>
+                          <input 
+                            type="date"
+                            value={customer.dateOfBirth}
+                            onChange={(e) => setCustomer({...customer, dateOfBirth: e.target.value})}
+                            style={{ 
+                              display: 'block', width: '100%', padding: '10px 14px', borderRadius: '10px',
+                              border: '1px solid var(--border-light)', marginTop: '4px', fontWeight: 700,
+                              fontSize: '14px', outline: 'none', background: 'white'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Address (Optional)</label>
+                          <input 
+                            placeholder="City / Area / Address" 
+                            value={customer.address}
+                            onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                            style={{ 
+                              display: 'block', width: '100%', padding: '10px 14px', borderRadius: '10px',
+                              border: '1px solid var(--border-light)', marginTop: '4px', fontWeight: 700,
+                              fontSize: '14px', outline: 'none', background: 'white'
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div>
