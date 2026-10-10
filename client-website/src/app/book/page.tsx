@@ -100,6 +100,13 @@ export default function BookingPage() {
     slotInterval: number;
     closedDays: string[];
     isClosedTodayOverride: boolean;
+    bankDetails?: {
+      bankName: string;
+      accountHolderName: string;
+      accountNumber: string;
+      ifscCode: string;
+      upiId: string;
+    };
   } | null>(null);
   const [isClosedToday, setIsClosedToday] = useState(false);
 
@@ -111,6 +118,7 @@ export default function BookingPage() {
   const [paymentMatched, setPaymentMatched] = useState(false);
   const [manualUtr, setManualUtr] = useState("");
   const [verifyingUtr, setVerifyingUtr] = useState(false);
+  const [bookingModalError, setBookingModalError] = useState("");
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -299,6 +307,7 @@ export default function BookingPage() {
 
     setLoading(true);
     setError("");
+    setBookingModalError("");
     try {
       const res = await apiClient.post('/appointments', {
         services: selectedServices.map(s => s._id),
@@ -320,10 +329,14 @@ export default function BookingPage() {
         setShowUpiModal(false);
         setStep(5); // Move to Success/Confirm step
       } else {
-        setError(res.data.message || "Booking failed");
+        const msg = res.data.message || "Booking failed";
+        setError(msg);
+        setBookingModalError(msg);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Server error. Please try again.");
+      const msg = err.response?.data?.message || "Server error. Please try again.";
+      setError(msg);
+      setBookingModalError(msg);
     } finally {
       setLoading(false);
     }
@@ -341,6 +354,7 @@ export default function BookingPage() {
     setPaymentRefId(refId);
     setTimerSeconds(300); // 5 minutes (300 seconds)
     setPaymentMatched(false);
+    setBookingModalError("");
     setManualUtr("");
     setShowUpiModal(true);
     setPollingActive(true);
@@ -367,25 +381,25 @@ export default function BookingPage() {
       });
     }, 1000);
 
-    // Poll payment matching API every 3 seconds
+    // Poll payment matching API every 2.5 seconds
     pollingTimerRef.current = setInterval(async () => {
       try {
         const res = await apiClient.get(`/transactions/check-match?referenceId=${paymentRefId}&amount=${totalAmount}`);
         if (res.data?.success && res.data?.matched) {
           setPaymentMatched(true);
           setPollingActive(false);
-          clearInterval(pollingTimerRef.current!);
-          clearInterval(countdownTimerRef.current!);
+          if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+          if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
           
-          // Complete booking automatically
+          // Complete booking automatically and transition to confirmed
           setTimeout(() => {
             handleBooking(paymentRefId);
-          }, 1500);
+          }, 800);
         }
       } catch (err) {
         console.error('Polling payment error:', err);
       }
-    }, 3000);
+    }, 2500);
 
     return () => {
       if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
@@ -398,6 +412,7 @@ export default function BookingPage() {
     e.preventDefault();
     if (!manualUtr.trim()) return;
     setVerifyingUtr(true);
+    setBookingModalError("");
 
     try {
       const res = await apiClient.post('/transactions/verify-customer-utr', {
@@ -416,10 +431,11 @@ export default function BookingPage() {
 
         setTimeout(() => {
           handleBooking(paymentRefId);
-        }, 1200);
+        }, 800);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error validating transaction reference');
+      const msg = err.response?.data?.message || 'Error validating transaction reference';
+      setBookingModalError(msg);
     } finally {
       setVerifyingUtr(false);
     }
@@ -431,8 +447,9 @@ export default function BookingPage() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // UPI QR Data URL
-  const qrUri = `upi://pay?pa=beautybeats320-3@okaxis&pn=BeautyBeats&am=${totalAmount}&tr=${paymentRefId}&tn=BB_${paymentRefId}&cu=INR`;
+  // Dynamic UPI QR Data URL (uses configured UPI ID from Admin or default)
+  const upiVpa = salonSettings?.bankDetails?.upiId || 'beautybeats320-3@okaxis';
+  const qrUri = `upi://pay?pa=${upiVpa}&pn=BeautyBeats&am=${totalAmount}&tr=${paymentRefId}&tn=BB_${paymentRefId}&cu=INR`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrUri)}`;
 
   if (authLoading || !user) return <div className="max-w-4xl mx-auto px-6 py-20 min-h-screen text-center text-xl font-bold text-gray-400">Please log in to book...</div>;
@@ -1305,73 +1322,147 @@ export default function BookingPage() {
                 <X className="w-6 h-6" />
               </button>
 
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-primary text-xs font-black uppercase tracking-wider mb-2">
-                  <QrCode className="w-3.5 h-3.5" /> Direct Account UPI
-                </div>
-                <h3 className="text-2xl font-black text-gray-900">Scan & Pay ₹{totalAmount}</h3>
-                <p className="text-xs text-gray-500 font-bold mt-1">
-                  Pay to: <span className="font-mono text-gray-900">beautybeats320-3@okaxis</span>
-                </p>
-              </div>
-
-              {/* QR Image with Countdown */}
-              <div className="relative flex flex-col items-center justify-center">
-                <div className="p-3 bg-white rounded-3xl border-4 border-primary/20 shadow-lg">
-                  <img 
-                    src={qrCodeUrl} 
-                    alt="Dynamic UPI QR" 
-                    className="w-48 h-48 rounded-2xl" 
-                  />
-                </div>
-
-                {/* 5-Minute Timer Badge */}
-                <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-xs font-black">
-                  <Clock className="w-4 h-4 text-amber-600" />
-                  <span>Session Expires In: <strong className="text-primary font-mono">{formatTimer(timerSeconds)}</strong></span>
-                </div>
-              </div>
-
-              {/* Live Polling Status */}
-              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
-                {paymentMatched ? (
-                  <div className="flex items-center justify-center gap-2 text-green-600 font-black text-sm">
-                    <CheckCircle2 className="w-5 h-5" />
-                    Payment Matched! Finalizing appointment...
+              {timerSeconds <= 0 ? (
+                /* SESSION EXPIRED / PAYMENT CANCELLED STATE */
+                <div className="space-y-5 py-4">
+                  <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                    <X className="w-8 h-8" />
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 text-indigo-600 font-bold text-xs">
-                    <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
-                    Listening for incoming ₹{totalAmount} credit on account...
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-900">Payment Expired</h3>
+                    <p className="text-xs text-gray-500 mt-2 font-medium">
+                      The 5-minute dynamic UPI window timed out without credit confirmation. Your booking was not reserved.
+                    </p>
                   </div>
-                )}
-                <p className="text-[10px] text-gray-400 font-mono">
-                  Order Ref: {paymentRefId}
-                </p>
-              </div>
 
-              {/* Manual 12-Digit UTR Fallback */}
-              <form onSubmit={handleVerifyManualUtr} className="space-y-3 pt-2 border-t border-gray-100 text-left">
-                <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 block">
-                  Already paid? Enter 12-Digit UTR / UPI Ref:
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. 428190281923"
-                    value={manualUtr}
-                    onChange={(e) => setManualUtr(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                  <button
-                    type="submit"
-                    disabled={verifyingUtr || !manualUtr.trim()}
-                    className="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {verifyingUtr ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Confirm'}
-                  </button>
+                  <div className="space-y-2.5 pt-2">
+                    <button
+                      onClick={handleInitiatePayment}
+                      className="w-full py-3 bg-primary text-white rounded-xl text-xs font-black shadow-lg shadow-red-100 hover:bg-primary/90 flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Generate Fresh QR Code
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPaymentMethod("CASH");
+                        setShowUpiModal(false);
+                        handleBooking();
+                      }}
+                      className="w-full py-3 bg-gray-100 text-gray-800 rounded-xl text-xs font-black hover:bg-gray-200"
+                    >
+                      Pay at Salon (Cash)
+                    </button>
+                    <button
+                      onClick={() => { setShowUpiModal(false); setPollingActive(false); }}
+                      className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600"
+                    >
+                      Cancel Booking
+                    </button>
+                  </div>
                 </div>
-              </form>
+              ) : (
+                /* ACTIVE PAYMENT & POLLING STATE */
+                <>
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-primary text-xs font-black uppercase tracking-wider mb-2">
+                      <QrCode className="w-3.5 h-3.5" /> Direct Account UPI
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900">Scan & Pay ₹{totalAmount}</h3>
+                    <p className="text-xs text-gray-500 font-bold mt-1">
+                      Pay to: <span className="font-mono text-gray-900">{upiVpa}</span>
+                    </p>
+                  </div>
+
+                  {/* QR Image with Countdown */}
+                  <div className="relative flex flex-col items-center justify-center">
+                    <div className="p-3 bg-white rounded-3xl border-4 border-primary/20 shadow-lg">
+                      <img 
+                        src={qrCodeUrl} 
+                        alt="Dynamic UPI QR" 
+                        className="w-48 h-48 rounded-2xl" 
+                      />
+                    </div>
+
+                    {/* 5-Minute Timer Badge */}
+                    <div className="mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-xs font-black">
+                      <Clock className="w-4 h-4 text-amber-600" />
+                      <span>Session Expires In: <strong className="text-primary font-mono">{formatTimer(timerSeconds)}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Live Polling Status */}
+                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+                    {paymentMatched ? (
+                      <div className="flex items-center justify-center gap-2 text-green-600 font-black text-sm">
+                        <CheckCircle2 className="w-5 h-5 animate-bounce" />
+                        Payment Matched! Finalizing appointment...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 text-indigo-600 font-bold text-xs">
+                        <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+                        Listening for incoming ₹{totalAmount} credit on account...
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400 font-mono">
+                      Order Ref: {paymentRefId}
+                    </p>
+                  </div>
+
+                  {/* Error Notification if Finalization Fails */}
+                  {bookingModalError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-left space-y-2">
+                      <div className="flex items-center gap-2 text-red-700 font-bold text-xs">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>{bookingModalError}</span>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleBooking(paymentRefId)}
+                          disabled={loading}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700"
+                        >
+                          {loading ? 'Retrying...' : 'Retry Finalizing'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPaymentMethod("CASH");
+                            setShowUpiModal(false);
+                            handleBooking();
+                          }}
+                          className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded-xl text-xs font-bold hover:bg-gray-300"
+                        >
+                          Pay Cash at Salon
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual 12-Digit UTR Fallback */}
+                  <form onSubmit={handleVerifyManualUtr} className="space-y-3 pt-2 border-t border-gray-100 text-left">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-gray-500 block">
+                      Already paid? Enter 12-Digit UTR / UPI Ref:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. 428190281923"
+                        value={manualUtr}
+                        onChange={(e) => setManualUtr(e.target.value)}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                      <button
+                        type="submit"
+                        disabled={verifyingUtr || !manualUtr.trim() || paymentMatched}
+                        className="px-4 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {verifyingUtr ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Confirm'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </motion.div>
           </div>
         )}

@@ -4,12 +4,14 @@ const {
   getTransactions, 
   syncTransaction, 
   checkPaymentMatch, 
-  verifyCustomerUtr 
+  verifyCustomerUtr,
+  receiveBankSmsWebhook
 } = require('../controllers/transactionController');
 
-// Public endpoints for client website payment polling and customer confirmation
+// Public endpoints for client website payment polling, customer confirmation & bank SMS webhook
 router.get('/check-match', checkPaymentMatch);
 router.post('/verify-customer-utr', verifyCustomerUtr);
+router.post('/webhook/bank-sms', receiveBankSmsWebhook);
 
 // Admin endpoints
 router.get('/', getTransactions);

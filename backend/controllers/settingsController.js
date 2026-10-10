@@ -37,7 +37,7 @@ exports.getSalonSettings = async (req, res) => {
 exports.updateSalonSettings = async (req, res) => {
   try {
     const branch = req.body.branch || req.branch || 'SALON';
-    const { openingTime, closingTime, slotInterval, closedDays, isClosedTodayOverride } = req.body;
+    const { openingTime, closingTime, slotInterval, closedDays, isClosedTodayOverride, bankDetails } = req.body;
 
     let settings = await SalonSettings.findOne({ branch });
     if (!settings) {
@@ -49,6 +49,12 @@ exports.updateSalonSettings = async (req, res) => {
     if (slotInterval !== undefined) settings.slotInterval = Number(slotInterval);
     if (Array.isArray(closedDays)) settings.closedDays = closedDays;
     if (typeof isClosedTodayOverride === 'boolean') settings.isClosedTodayOverride = isClosedTodayOverride;
+    if (bankDetails && typeof bankDetails === 'object') {
+      settings.bankDetails = {
+        ...(settings.bankDetails?.toObject ? settings.bankDetails.toObject() : settings.bankDetails),
+        ...bankDetails
+      };
+    }
 
     await settings.save();
 

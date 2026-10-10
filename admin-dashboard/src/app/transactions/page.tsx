@@ -18,8 +18,10 @@ import {
   CheckCircle2,
   Zap,
   ArrowDownLeft,
-  ExternalLink
+  ExternalLink,
+  Landmark
 } from 'lucide-react';
+import Link from 'next/link';
 import styles from '@/styles/layout/Dashboard.module.css';
 import cardStyles from '@/styles/components/Card.module.css';
 import Table from '@/components/Table';
@@ -30,6 +32,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [bills, setBills] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalVolume: 0, upiVolume: 0, count: 0 });
+  const [bankDetails, setBankDetails] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState("ALL"); // ALL, CLIENT_WEBSITE_BOOKING, WALKIN_POS, OFFLINE_SALON, OTHER
   const [loading, setLoading] = useState(true);
@@ -60,6 +63,12 @@ export default function Transactions() {
       const billsRes = await apiRequest(`/billing?search=${search}`).catch(() => null);
       if (billsRes && billsRes.success) {
         setBills(billsRes.data || []);
+      }
+
+      // Fetch bank configuration
+      const settingsRes = await apiRequest('/settings/salon').catch(() => null);
+      if (settingsRes?.success && settingsRes.data?.bankDetails) {
+        setBankDetails(settingsRes.data.bankDetails);
       }
     } catch (err: any) {
       console.error('Error fetching transactions:', err);
@@ -180,6 +189,79 @@ export default function Transactions() {
           </button>
         </div>
       </header>
+
+      {/* Live Bank Settlement Status Banner */}
+      <div style={{
+        margin: '1.5rem 0 2rem 0',
+        padding: '1.25rem 1.5rem',
+        borderRadius: '20px',
+        background: 'linear-gradient(135deg, rgba(235, 30, 60, 0.04) 0%, rgba(99, 102, 241, 0.04) 100%)',
+        border: '1px solid rgba(235, 30, 60, 0.12)',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '1rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '14px',
+            background: 'rgba(235, 30, 60, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--primary)'
+          }}>
+            <Landmark size={22} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-main)' }}>
+                {bankDetails?.bankName || 'Axis Bank'} • {bankDetails?.accountHolderName || 'BeautyBeats'}
+              </span>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '3px 8px',
+                borderRadius: '999px',
+                background: 'rgba(34, 197, 94, 0.12)',
+                color: '#16A34A',
+                fontSize: '11px',
+                fontWeight: 800
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A' }} /> Live Settlement Active
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <span>A/c: <strong style={{ color: 'var(--text-main)' }}>{bankDetails?.accountNumber ? '••••' + bankDetails.accountNumber.slice(-4) : '••••3201'}</strong></span>
+              <span>IFSC: <strong style={{ color: 'var(--text-main)' }}>{bankDetails?.ifscCode || 'UTIB0001234'}</strong></span>
+              <span>UPI ID: <strong style={{ color: 'var(--primary)', fontFamily: 'monospace' }}>{bankDetails?.upiId || 'beautybeats320-3@okaxis'}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <Link
+          href="/settings"
+          style={{
+            padding: '8px 16px',
+            borderRadius: '12px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-main)',
+            fontSize: '12px',
+            fontWeight: 800,
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          Configure Bank & Webhook <ExternalLink size={12} />
+        </Link>
+      </div>
 
       {/* KPI Cards */}
       <section className={styles.kpiGrid} style={{ marginBottom: '2rem' }}>

@@ -14,12 +14,13 @@ const appointmentValidator = {
       }).optional(),
       customerId: Joi.string().optional(),
       staff: Joi.string().allow('', null),
-      paymentMethod: Joi.string().allow('', null),
+      paymentMethod: Joi.string().allow('', null).optional(),
+      transactionRef: Joi.string().allow('', null).optional(),
       couponCode: Joi.string().allow('', null),
       totalPrice: Joi.number().optional(),
       pointsRedeemed: Joi.number().optional().default(0),
       type: Joi.string().valid('ONLINE', 'WALKIN').optional().default('ONLINE')
-    });
+    }).unknown(true);
     return schema.validate(data);
   },
   

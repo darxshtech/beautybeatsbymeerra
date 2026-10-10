@@ -133,6 +133,9 @@ exports.checkPaymentMatch = async (req, res) => {
     if (match) {
       // Mark as matched
       match.status = 'MATCHED';
+      if (referenceId && match.referenceId !== referenceId && match.referenceId.startsWith('TXN-')) {
+        match.referenceId = referenceId;
+      }
       await match.save();
 
       return res.status(200).json({
@@ -150,6 +153,100 @@ exports.checkPaymentMatch = async (req, res) => {
   } catch (err) {
     console.error('Error checking payment match:', err);
     res.status(500).json({ success: false, message: 'Server error checking payment' });
+  }
+};
+
+// @desc    Live Bank SMS / App Notification Webhook Listener (Automated Zero-Gateway Sync)
+// @route   POST /api/transactions/webhook/bank-sms
+exports.receiveBankSmsWebhook = async (req, res) => {
+  try {
+    const rawMessage = req.body.message || req.body.body || req.body.text || req.body.sms || (typeof req.body === 'string' ? req.body : '');
+    const providedSecret = req.headers['x-webhook-secret'] || req.query.secret || req.body.secret;
+    
+    // Check webhook secret if configured in salon settings
+    const SalonSettings = require('../models/SalonSettings');
+    const settings = await SalonSettings.findOne({ branch: 'SALON' });
+    if (settings?.bankDetails?.webhookSecret && providedSecret && settings.bankDetails.webhookSecret !== providedSecret) {
+      return res.status(401).json({ success: false, message: 'Invalid webhook secret' });
+    }
+
+    let amount = Number(req.body.amount);
+    let utrNumber = req.body.utrNumber || req.body.utr;
+    let orderRef = req.body.referenceId || req.body.ref;
+
+    // Regex extraction from raw bank SMS if not provided directly
+    if (rawMessage) {
+      // 1. Extract Amount: e.g. "credited with INR 500.00" or "Rs.500" or "INR 500"
+      if (!amount || isNaN(amount)) {
+        const amtMatch = rawMessage.match(/(?:INR|Rs\.?|INR\s*|Rs\s*)[:\s]*([0-9]+(?:\.[0-9]{1,2})?)/i) ||
+                         rawMessage.match(/credited\s*(?:with|by)?\s*(?:INR|Rs\.?)?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
+        if (amtMatch) {
+          amount = parseFloat(amtMatch[1]);
+        }
+      }
+
+      // 2. Extract 12-digit UTR
+      if (!utrNumber) {
+        const utrMatch = rawMessage.match(/(?:UPI\/|Ref\s*(?:No\.?)?[:\s]*|UTR\s*[:\s]*|UPI\s*Ref[:\s]*)([0-9]{12})/i) ||
+                         rawMessage.match(/\b([0-9]{12})\b/);
+        if (utrMatch) {
+          utrNumber = utrMatch[1];
+        }
+      }
+
+      // 3. Extract Order Reference if present in remarks: e.g. "BB-123456-7890"
+      if (!orderRef) {
+        const refMatch = rawMessage.match(/\b(BB-[0-9]{6}-[0-9]{4})\b/i);
+        if (refMatch) {
+          orderRef = refMatch[1];
+        }
+      }
+    }
+
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ success: false, message: 'Could not detect credit amount from message or payload' });
+    }
+
+    // Verify if UTR or Ref already exists to prevent duplicate credits
+    let existing = null;
+    if (utrNumber) {
+      existing = await AccountTransaction.findOne({ utrNumber });
+    }
+    if (!existing && orderRef) {
+      existing = await AccountTransaction.findOne({ referenceId: orderRef });
+    }
+
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: 'Transaction already logged',
+        data: existing
+      });
+    }
+
+    const ref = orderRef || `TXN-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const transaction = await AccountTransaction.create({
+      referenceId: ref,
+      amount: Number(amount),
+      paymentMethod: 'UPI',
+      tag: 'CLIENT_WEBSITE_BOOKING',
+      status: 'RECEIVED',
+      utrNumber: utrNumber || `UTR-${Date.now().toString().slice(-8)}`,
+      notes: rawMessage ? `Bank SMS / Live Alert: ${rawMessage.slice(0, 200)}` : 'Live webhook notification',
+      customerName: req.body.customerName || 'Direct UPI Payer'
+    });
+
+    console.log(`[BANK WEBHOOK] Successfully logged ₹${amount} credit! Ref: ${ref}, UTR: ${utrNumber}`);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Live bank transaction logged and available for instant auto-matching',
+      data: transaction
+    });
+  } catch (err) {
+    console.error('Error handling bank SMS webhook:', err);
+    res.status(500).json({ success: false, message: 'Server error processing bank webhook' });
   }
 };
 

@@ -175,6 +175,8 @@ class AppointmentService {
       staff: data.staff,
       notes,
       couponCode: data.couponCode || null,
+      transactionRef: data.transactionRef || null,
+      paymentMethod: data.paymentMethod || 'UPI',
       branch: data.branch || 'SALON'
     });
 
@@ -237,6 +239,15 @@ class AppointmentService {
       });
       appointment.billing = billing._id;
       await appointment.save();
+
+      // Link AccountTransaction if reference was provided
+      if (data.transactionRef) {
+        const AccountTransaction = require('../../models/AccountTransaction');
+        AccountTransaction.findOneAndUpdate(
+          { referenceId: data.transactionRef },
+          { appointment: appointment._id, billing: billing._id, status: 'MATCHED' }
+        ).catch(err => console.error('Error linking AccountTransaction:', err));
+      }
     }
 
     // Send WhatsApp Confirmations
