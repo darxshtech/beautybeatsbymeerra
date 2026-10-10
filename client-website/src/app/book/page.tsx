@@ -614,13 +614,13 @@ export default function BookingPage() {
               {(() => {
                 // 1. Filter services belonging to any of the selected categories (or main category fallback)
                 const filteredServices = services.filter(s => {
-                  const sCat = typeof s.category === 'object' ? s.category?.name : s.category;
+                  const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
                   if (selectedCategories.length > 0) {
-                    return selectedCategories.some(sc => sc?.toLowerCase() === sCat?.toLowerCase());
+                    return selectedCategories.some(sc => sc?.trim().toLowerCase() === sCat?.trim().toLowerCase());
                   }
                   if (activeMainCategory) {
                     const sMain = s.mainCategory || (typeof s.category === 'object' ? s.category?.mainCategory : s.category);
-                    return sMain?.toLowerCase() === activeMainCategory?.toLowerCase();
+                    return sMain?.trim().toLowerCase() === activeMainCategory?.trim().toLowerCase();
                   }
                   return true;
                 });
@@ -632,8 +632,8 @@ export default function BookingPage() {
 
                 const groupedByCategory = activeCatList.map(catName => {
                   const catServices = filteredServices.filter(s => {
-                    const sCat = typeof s.category === 'object' ? s.category?.name : s.category;
-                    return sCat?.toLowerCase() === catName?.toLowerCase();
+                    const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
+                    return sCat?.trim().toLowerCase() === catName?.trim().toLowerCase();
                   });
                   return {
                     categoryName: catName,
@@ -644,8 +644,28 @@ export default function BookingPage() {
                 return (
                   <div className="space-y-12">
                     {groupedByCategory.length === 0 ? (
-                      <div className="py-12 text-center text-gray-400 font-bold">
-                        No services found for the selected categories.
+                      <div className="py-16 text-center bg-gray-50/50 rounded-3xl border border-gray-100 p-8 space-y-4">
+                        <Scissors className="w-12 h-12 text-gray-300 mx-auto" />
+                        <h4 className="text-xl font-black text-gray-800">No Services Found In Selected Category</h4>
+                        <p className="text-sm text-gray-500 font-medium max-w-md mx-auto">
+                          There are currently no cataloged services under <strong className="text-gray-900">"{selectedCategories.join(', ')}"</strong>. You can select another category or view all available services.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={prevStep}
+                            className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full text-xs font-black hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+                          >
+                            <ChevronLeft className="w-4 h-4" /> Choose Different Category
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCategories([])}
+                            className="px-6 py-3 bg-primary text-white rounded-full text-xs font-black hover:bg-primary-dark transition-colors shadow-lg shadow-red-100"
+                          >
+                            View All Available Services
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       groupedByCategory.map(group => (

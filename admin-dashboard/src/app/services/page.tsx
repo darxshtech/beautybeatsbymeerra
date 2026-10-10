@@ -195,7 +195,7 @@ export default function Services() {
                gap: '8px'
             }}>
                <Settings size={20} />
-               <span>Categories</span>
+               <span>Manage Categories</span>
             </button>
            <button 
              onClick={() => handleOpenModal()}
@@ -209,10 +209,11 @@ export default function Services() {
                cursor: 'pointer',
                display: 'flex',
                alignItems: 'center',
-               gap: '8px'
+               gap: '8px',
+               boxShadow: '0 4px 14px rgba(235, 30, 60, 0.25)'
             }}>
                <Scissors size={20} />
-               <span>Catalog New Service</span>
+               <span>+ Add New Service</span>
             </button>
         </div>
       </header>
@@ -481,7 +482,20 @@ export default function Services() {
       </Modal>
 
       <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} title="Manage Categories">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ 
+            padding: '12px 16px', 
+            background: 'rgba(0, 122, 255, 0.08)', 
+            border: '1px solid rgba(0, 122, 255, 0.2)', 
+            borderRadius: '14px', 
+            fontSize: '12px', 
+            color: '#007AFF', 
+            lineHeight: 1.5,
+            fontWeight: 600 
+          }}>
+            ℹ️ <strong>Note:</strong> Categories are groupings (e.g. Haircut, Facial, Spa). After creating a category here, close this window and click the red <strong>"+ Add New Service"</strong> button to add bookable treatments with price and duration!
+          </div>
+
           <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input 
