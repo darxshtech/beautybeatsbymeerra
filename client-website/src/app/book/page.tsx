@@ -67,7 +67,7 @@ export default function BookingPage() {
   const [services, setServices] = useState<any[]>(fallbackBookingServices);
   const [loadingServices, setLoadingServices] = useState(true);
   const [activeMainCategory, setActiveMainCategory] = useState<string>("");
-  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
   const [staff, setStaff] = useState<any[]>(fallbackStaff);
@@ -448,7 +448,11 @@ export default function BookingPage() {
                     {displayMainCategories.map(cat => (
                       <button
                         key={cat}
-                        onClick={() => { setActiveMainCategory(cat); nextStep(); }}
+                        onClick={() => { 
+                          setActiveMainCategory(cat); 
+                          setSelectedCategories([]); 
+                          nextStep(); 
+                        }}
                         className={cn(
                           "p-8 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
                           activeMainCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
@@ -463,19 +467,37 @@ export default function BookingPage() {
             </div>
           )}
 
+          {/* STEP 1: MULTI-SELECT CATEGORIES */}
           {step === 1 && (
             <div className="space-y-8">
-              <div className="text-center mb-12">
-                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Category</h2>
-                 <p className="text-gray-500">Choose a specific domain for {activeMainCategory}.</p>
+              <div className="text-center mb-8">
+                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Categories</h2>
+                 <p className="text-gray-500">Pick one or more categories for {activeMainCategory}.</p>
               </div>
               {(() => {
                 const availableSubCategories = categories.filter(c => 
                   !activeMainCategory || c.mainCategory?.toLowerCase() === activeMainCategory?.toLowerCase()
                 );
 
+                const allCatNames = availableSubCategories.map(c => c.name);
+                const isAllSelected = availableSubCategories.length > 0 && availableSubCategories.every(c => selectedCategories.includes(c.name));
+
+                const toggleSelectAll = () => {
+                  if (isAllSelected) {
+                    setSelectedCategories([]);
+                  } else {
+                    setSelectedCategories(allCatNames);
+                  }
+                };
+
+                const toggleCategory = (catName: string) => {
+                  setSelectedCategories(prev => 
+                    prev.includes(catName) ? prev.filter(c => c !== catName) : [...prev, catName]
+                  );
+                };
+
                 return (
-                  <div>
+                  <div className="space-y-6">
                     {availableSubCategories.length === 0 ? (
                       <div className="py-12 text-center text-gray-400 font-bold">
                         <p>No subcategories found for {activeMainCategory}.</p>
@@ -484,44 +506,117 @@ export default function BookingPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {availableSubCategories.map(cat => (
-                          <button
-                            key={cat._id}
-                            onClick={() => { setActiveCategory(cat.name); nextStep(); }}
-                            className={cn(
-                              "p-6 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
-                              activeCategory === cat.name ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
+                      <>
+                        {/* Quick Selection Actions Bar */}
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-500">
+                              {selectedCategories.length} of {availableSubCategories.length} selected
+                            </span>
+                            {selectedCategories.length > 1 && (
+                              <span className="text-[10px] font-black uppercase text-primary bg-red-50 px-2.5 py-0.5 rounded-full border border-primary/20">
+                                Multi-Select Active
+                              </span>
                             )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={toggleSelectAll}
+                            className="text-xs font-black text-primary hover:underline"
                           >
-                            <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors">{cat.name}</h4>
-                            <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">{cat.gender}</p>
+                            {isAllSelected ? "Deselect All" : "Select All Categories"}
                           </button>
-                        ))}
-                      </div>
+                        </div>
+
+                        {/* Interactive Multi-Select Category Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {availableSubCategories.map(cat => {
+                            const isSelected = selectedCategories.includes(cat.name);
+                            return (
+                              <button
+                                key={cat._id}
+                                type="button"
+                                onClick={() => toggleCategory(cat.name)}
+                                className={cn(
+                                  "p-6 rounded-3xl border-2 text-center transition-all relative group flex flex-col justify-between h-36",
+                                  isSelected 
+                                    ? "border-primary bg-red-50/50 shadow-md ring-2 ring-primary/20" 
+                                    : "border-gray-50 bg-gray-50/30 hover:bg-gray-50"
+                                )}
+                              >
+                                <div className="flex justify-end w-full">
+                                  <div className={cn(
+                                    "w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                                    isSelected ? "bg-primary text-white" : "border-2 border-gray-300"
+                                  )}>
+                                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                  </div>
+                                </div>
+
+                                <div className="my-auto">
+                                  <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors leading-tight">
+                                    {cat.name}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">{cat.gender || 'All'}</p>
+                                </div>
+
+                                <div className="text-[10px] font-bold text-gray-400">
+                                  {isSelected ? <span className="text-primary font-black">Selected</span> : "Tap to select"}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Step Navigation Bar */}
+                        <div className="flex justify-between items-center pt-8 border-t border-gray-100">
+                          <button onClick={prevStep} className="px-8 py-4 font-black flex items-center gap-2 text-gray-400 hover:text-gray-900">
+                            <ChevronLeft className="w-5 h-5" /> Back
+                          </button>
+                          <button
+                            onClick={nextStep}
+                            disabled={selectedCategories.length === 0}
+                            className="px-10 py-4 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-dark transition-all"
+                          >
+                            Continue to Services ({selectedCategories.length})
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 );
               })()}
-              <div className="flex justify-between pt-8">
-                <button onClick={prevStep} className="px-8 py-4 font-black flex items-center gap-2 text-gray-400 hover:text-gray-900">
-                  <ChevronLeft className="w-5 h-5" /> Back
-                </button>
-              </div>
             </div>
           )}
 
+          {/* STEP 2: CHOOSE SERVICES (Combined with Category-wise Separation) */}
           {step === 2 && (
             <div className="space-y-8">
-              <div className="text-center mb-12">
+              <div className="text-center mb-8">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Choose Services</h2>
-                 <p className="text-gray-500">Select one or more services to add to your appointment.</p>
+                 <p className="text-gray-500">
+                   {selectedCategories.length > 1 
+                     ? `Showing services combined across ${selectedCategories.length} selected categories.`
+                     : "Select one or more services to add to your appointment."}
+                 </p>
+                 {selectedCategories.length > 0 && (
+                   <div className="flex flex-wrap justify-center gap-1.5 mt-3">
+                     {selectedCategories.map(c => (
+                       <span key={c} className="text-[10px] font-black uppercase bg-red-50 text-primary px-3 py-1 rounded-full border border-primary/20">
+                         {c}
+                       </span>
+                     ))}
+                   </div>
+                 )}
               </div>
               {(() => {
+                // 1. Filter services belonging to any of the selected categories (or main category fallback)
                 const filteredServices = services.filter(s => {
-                  if (activeCategory) {
-                    const sCat = typeof s.category === 'object' ? s.category?.name : s.category;
-                    return sCat?.toLowerCase() === activeCategory?.toLowerCase();
+                  const sCat = typeof s.category === 'object' ? s.category?.name : s.category;
+                  if (selectedCategories.length > 0) {
+                    return selectedCategories.some(sc => sc?.toLowerCase() === sCat?.toLowerCase());
                   }
                   if (activeMainCategory) {
                     const sMain = s.mainCategory || (typeof s.category === 'object' ? s.category?.mainCategory : s.category);
@@ -530,67 +625,115 @@ export default function BookingPage() {
                   return true;
                 });
 
+                // 2. Group the filtered services category-wise
+                const activeCatList = selectedCategories.length > 0 
+                  ? selectedCategories 
+                  : Array.from(new Set(filteredServices.map(s => typeof s.category === 'object' ? s.category?.name : s.category)));
+
+                const groupedByCategory = activeCatList.map(catName => {
+                  const catServices = filteredServices.filter(s => {
+                    const sCat = typeof s.category === 'object' ? s.category?.name : s.category;
+                    return sCat?.toLowerCase() === catName?.toLowerCase();
+                  });
+                  return {
+                    categoryName: catName,
+                    services: catServices
+                  };
+                }).filter(group => group.services.length > 0);
+
                 return (
-                  <div className="space-y-6">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredServices.length === 0 ? (
-                          <div className="col-span-2 py-12 text-center text-gray-400 font-bold">No services found in this category.</div>
-                        ) : (
-                          filteredServices.map(s => {
-                            const isSelected = selectedServices.some(item => item._id === s._id);
-                            return (
-                              <button
-                                key={s._id}
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setSelectedServices(selectedServices.filter(item => item._id !== s._id));
-                                  } else {
-                                    setSelectedServices([...selectedServices, s]);
-                                  }
-                                }}
-                                className={cn(
-                                  "p-6 rounded-3xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between h-40",
-                                  isSelected ? "border-primary bg-red-50/30" : "border-gray-50 bg-gray-50/30 hover:bg-gray-50"
-                                )}
-                              >
-                                <div>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-black text-gray-900 text-lg leading-tight">{s.name}</h4>
-                                    <span className="text-primary font-black text-lg">₹{s.price}</span>
+                  <div className="space-y-12">
+                    {groupedByCategory.length === 0 ? (
+                      <div className="py-12 text-center text-gray-400 font-bold">
+                        No services found for the selected categories.
+                      </div>
+                    ) : (
+                      groupedByCategory.map(group => (
+                        <div key={group.categoryName} className="space-y-4">
+                          {/* Distinct Category Section Header */}
+                          <div className="flex items-center justify-between pb-3 border-b-2 border-red-50">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-red-50 text-primary flex items-center justify-center font-black">
+                                <Scissors className="w-4 h-4" />
+                              </div>
+                              <h3 className="text-xl font-black text-gray-900 uppercase tracking-wider">
+                                {group.categoryName}
+                              </h3>
+                            </div>
+                            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                              {group.services.length} {group.services.length === 1 ? 'Service' : 'Services'}
+                            </span>
+                          </div>
+
+                          {/* 2-Column Grid of Service Cards for this Category */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {group.services.map(s => {
+                              const isSelected = selectedServices.some(item => item._id === s._id);
+                              return (
+                                <button
+                                  key={s._id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedServices(selectedServices.filter(item => item._id !== s._id));
+                                    } else {
+                                      setSelectedServices([...selectedServices, s]);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "p-6 rounded-3xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between h-40",
+                                    isSelected ? "border-primary bg-red-50/40 shadow-sm" : "border-gray-50 bg-gray-50/30 hover:bg-gray-50"
+                                  )}
+                                >
+                                  <div>
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h4 className="font-black text-gray-900 text-lg leading-tight">{s.name}</h4>
+                                      <span className="text-primary font-black text-lg">₹{s.price}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-400 font-bold flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5" /> {s.duration} mins
+                                    </p>
                                   </div>
-                                  <p className="text-xs text-gray-400 font-bold flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5" /> {s.duration} mins
-                                  </p>
-                                </div>
-                                <div className="flex items-center justify-between mt-auto">
-                                   <span className="text-[10px] font-black uppercase text-gray-400">{s.category?.name || s.category}</span>
-                                   <div className={cn(
-                                     "w-6 h-6 rounded-full flex items-center justify-center transition-all",
-                                     isSelected ? "bg-primary text-white" : "border-2 border-gray-200"
-                                   )}>
-                                     {isSelected && <CheckCircle2 className="w-4 h-4" />}
-                                   </div>
-                                </div>
-                                {isSelected && <div className="absolute inset-0 bg-red-50/20 pointer-events-none" />}
-                              </button>
-                            );
-                          })
+                                  <div className="flex items-center justify-between mt-auto">
+                                     <span className="text-[10px] font-black uppercase text-gray-400">{group.categoryName}</span>
+                                     <div className={cn(
+                                       "w-6 h-6 rounded-full flex items-center justify-center transition-all",
+                                       isSelected ? "bg-primary text-white" : "border-2 border-gray-200"
+                                     )}>
+                                       {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                                     </div>
+                                  </div>
+                                  {isSelected && <div className="absolute inset-0 bg-red-50/20 pointer-events-none" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+
+                    {/* Summary and Next Step Navigation Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-gray-100">
+                      <div className="flex items-center gap-4">
+                        <button onClick={prevStep} className="px-6 py-3 font-black flex items-center gap-2 text-gray-400 hover:text-gray-900">
+                          <ChevronLeft className="w-5 h-5" /> Categories
+                        </button>
+                        {selectedServices.length > 0 && (
+                          <div>
+                            <p className="text-xs font-black uppercase text-gray-400">Total Services: {selectedServices.length}</p>
+                            <p className="text-2xl font-black text-primary">₹{selectedServices.reduce((sum, s) => sum + s.price, 0)}</p>
+                          </div>
                         )}
-                     </div>
-                     {selectedServices.length > 0 && (
-                       <div className="flex justify-between pt-4 border-t border-gray-100">
-                         <div className="text-left">
-                           <p className="text-xs font-black uppercase text-gray-400">Total Services: {selectedServices.length}</p>
-                           <p className="text-2xl font-black text-primary">₹{selectedServices.reduce((sum, s) => sum + s.price, 0)}</p>
-                         </div>
-                         <button 
-                           onClick={nextStep} 
-                           className="px-8 py-3 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center gap-2"
-                         >
-                           Continue to Schedule <ChevronRight className="w-5 h-5" />
-                         </button>
-                       </div>
-                     )}
+                      </div>
+
+                      <button 
+                        onClick={nextStep} 
+                        disabled={selectedServices.length === 0}
+                        className="px-8 py-3.5 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-dark transition-all"
+                      >
+                        Continue to Schedule <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })()}
