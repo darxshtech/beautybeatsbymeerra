@@ -56,7 +56,12 @@ class AppointmentService {
    * Get all appointments for calendar view (filtered by date)
    */
   async getAppointments(query) {
-    let queryObj = { branch: query.branch || 'SALON' };
+    let queryObj = {};
+    if (query.branch) {
+      queryObj.branch = query.branch;
+    } else if (!query.customerId) {
+      queryObj.branch = 'SALON';
+    }
     
     // Formatting date query
     if (query.startDate && query.endDate) {
