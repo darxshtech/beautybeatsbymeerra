@@ -3,20 +3,26 @@ const Appointment = require('../models/Appointment');
 const Billing = require('../models/Billing');
 const AdminNotification = require('../models/AdminNotification');
 const User = require('../models/User');
+const SalonSettings = require('../models/SalonSettings');
+const { timeStringToMinutes, generateSlots } = require('../utils/slotGenerator');
 
 exports.getAvailability = async (req, res, next) => {
   try {
     const { date, staffId, duration } = req.query;
     if (!date) return res.status(400).json({ success: false, message: 'Date is required' });
-    const serviceDuration = parseInt(duration) || 30;
-    const slotsNeeded = Math.ceil(serviceDuration / 30);
 
-    // Dynamic pool of slots for salon (10 AM to 7 PM)
-    const slots = [
-      '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-      '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
-      '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'
-    ];
+    // Fetch dynamic salon settings
+    const branch = req.query.branch || req.branch || 'SALON';
+    let settings = await SalonSettings.findOne({ branch });
+    const openingTime = settings?.openingTime || '10:00 AM';
+    const closingTime = settings?.closingTime || '08:00 PM';
+    const slotInterval = settings?.slotInterval || 30;
+
+    const serviceDuration = parseInt(duration) || 30;
+    const slotsNeeded = Math.ceil(serviceDuration / slotInterval);
+
+    // Dynamic pool of slots generated strictly between salon opening and closing time
+    const slots = generateSlots(openingTime, closingTime, slotInterval);
     const availabilityList = [];
 
     const User = require('../models/User');
@@ -83,6 +89,12 @@ exports.getAvailability = async (req, res, next) => {
           availabilityList.push({ slot, available: false });
           continue;
         }
+      }
+
+      // Check if salon is closed today by override or weekly off
+      if ((settings?.isClosedTodayOverride && isToday) || (settings?.closedDays && settings.closedDays.includes(dayName))) {
+        availabilityList.push({ slot, available: false });
+        continue;
       }
 
       for (const s of staffList) {
