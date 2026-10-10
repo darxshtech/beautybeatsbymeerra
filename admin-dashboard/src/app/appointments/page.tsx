@@ -62,7 +62,7 @@ export default function Appointments() {
       const [appts, custs, servs] = await Promise.all([
         apiRequest(`/appointments?search=${search}`),
         apiRequest('/users/customers?limit=100'),
-        apiRequest('/services?limit=100')
+        apiRequest('/services?limit=1000')
       ]);
       if (appts.success) {
         const fetchedList = appts.data || [];

@@ -18,7 +18,7 @@ export default function POSPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await apiRequest('/services');
+        const res = await apiRequest('/services?limit=1000');
         if (res.success) setServices(res.data);
       } catch (err) {
         console.error(err);

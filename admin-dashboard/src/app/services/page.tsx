@@ -34,7 +34,7 @@ export default function Services() {
 
   const fetchServices = async () => {
     try {
-      const json = await apiRequest(`/services?search=${search}`);
+      const json = await apiRequest(`/services?limit=1000&search=${search}`);
       if (json.success) setServices(json.data);
     } catch (err) {
       console.error(err);
@@ -231,7 +231,7 @@ export default function Services() {
 
       <Table 
         columns={[
-          { key: 'name', label: 'Item Description', render: (val) => (
+          { key: 'name', label: 'Treatment / Service', render: (val) => (
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ 
                   width: '36px', 
@@ -241,15 +241,33 @@ export default function Services() {
                   borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}>
                    {val.category === 'Package' ? <TrendingUp size={18} /> : <Scissors size={18} />}
                 </div>
                 <div>
-                   <p style={{ fontWeight: 800, fontSize: '15px' }}>{val.name}</p>
-                   <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{val.category}</p>
+                   <p style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-main)' }}>{val.name}</p>
+                   {val.description ? (
+                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                       {val.description}
+                     </p>
+                   ) : null}
                 </div>
              </div>
+          )},
+          { key: 'category', label: 'Assigned Category', render: (val) => (
+             <span style={{ 
+               background: 'rgba(255, 59, 48, 0.08)', 
+               color: 'var(--primary)', 
+               padding: '6px 14px', 
+               borderRadius: '12px', 
+               fontSize: '13px', 
+               fontWeight: 800,
+               display: 'inline-block'
+             }}>
+               {val.category || 'General'}
+             </span>
           )},
           { key: 'duration', label: 'Duration Allocation', render: (val) => (
              <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{val.duration} Mins</span>
@@ -493,41 +511,33 @@ export default function Services() {
             lineHeight: 1.5,
             fontWeight: 600 
           }}>
-            ℹ️ <strong>Note:</strong> Categories are groupings (e.g. Haircut, Facial, Spa). After creating a category here, close this window and click the red <strong>"+ Add New Service"</strong> button to add bookable treatments with price and duration!
+            ℹ️ <strong>Note:</strong> Categories are groupings (e.g. Haircut, Facial, Spa). After creating a category here, click the red <strong>"+ Add New Service"</strong> button to catalog treatments with price and duration!
           </div>
-
-          <form onSubmit={handleAddCategory} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input 
-                className={styles.input}
-                placeholder="Main Category (e.g. Hair)..."
-                value={newMainCategoryName}
-                onChange={e => setNewMainCategoryName(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <input 
-                required
-                className={styles.input}
-                placeholder="Sub Category name (e.g. Haircut)..."
-                value={newCategoryName}
-                onChange={e => setNewCategoryName(e.target.value)}
-                style={{ flex: 2 }}
-              />
-              <button 
-                type="submit"
-                style={{ 
-                  background: 'var(--primary)', 
-                  color: 'white', 
-                  padding: '0 20px', 
-                  borderRadius: '12px', 
-                  fontWeight: 700,
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                Add
-              </button>
-            </div>
+          
+          <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input 
+              required
+              className={styles.input}
+              placeholder="Enter category name (e.g. Hair Treatment, Nails, Skin Care, Spa)..."
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button 
+              type="submit"
+              style={{ 
+                background: 'var(--primary)', 
+                color: 'white', 
+                padding: '0 20px', 
+                borderRadius: '12px', 
+                fontWeight: 700, 
+                border: 'none', 
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              + Add Category
+            </button>
           </form>
 
           <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

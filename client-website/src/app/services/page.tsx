@@ -45,7 +45,7 @@ export default function ServicesPage() {
       try {
         const [catRes, serRes] = await Promise.all([
           apiClient.get('/categories').catch(() => ({ data: { success: false } })),
-          apiClient.get('/services?branch=SALON').catch(() => ({ data: { success: false } }))
+          apiClient.get('/services?branch=SALON&limit=1000').catch(() => ({ data: { success: false } }))
         ]);
 
         let availableCategories: string[] = [];
@@ -58,6 +58,14 @@ export default function ServicesPage() {
           
           if (availableCategories.length === 0) {
             availableCategories = Array.from(new Set(services.map((s: any) => s.category).filter(Boolean))) as string[];
+          } else {
+            // Also include any categories present on existing services that might not be in categories table
+            const serviceCats = services.map((s: any) => s.category).filter(Boolean);
+            serviceCats.forEach((sc: string) => {
+              if (!availableCategories.some(ac => ac.trim().toLowerCase() === sc.trim().toLowerCase())) {
+                availableCategories.push(sc);
+              }
+            });
           }
 
           const groupedCategories = availableCategories.map(catName => {
@@ -70,7 +78,7 @@ export default function ServicesPage() {
             return {
               category: catName,
               img: catImage,
-              items: services.filter((s: any) => s.category === catName)
+              items: services.filter((s: any) => s.category?.trim().toLowerCase() === catName?.trim().toLowerCase())
             };
           }).filter(c => c.items.length > 0);
 

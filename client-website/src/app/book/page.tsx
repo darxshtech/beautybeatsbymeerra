@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Scissors, 
@@ -20,7 +20,8 @@ import {
   ShieldCheck, 
   X, 
   RefreshCw, 
-  QrCode 
+  QrCode,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -28,7 +29,7 @@ import apiClient from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const steps = ['Type', 'Category', 'Services', 'Schedule', 'Details', 'Payment', 'Confirm'];
+const steps = ['Category', 'Services', 'Schedule', 'Details', 'Payment', 'Confirm'];
 
 const fallbackBookingServices = [
   { _id: 'fb-1', name: 'Haircut & Styling', price: 150, category: 'Hair', duration: 45 },
@@ -66,10 +67,11 @@ export default function BookingPage() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>(fallbackBookingServices);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [activeMainCategory, setActiveMainCategory] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
   const [staff, setStaff] = useState<any[]>(fallbackStaff);
   const [selectedStaff, setSelectedStaff] = useState<string>("");
   const [step, setStep] = useState(0);
@@ -128,7 +130,7 @@ export default function BookingPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await apiClient.get('/services?branch=SALON');
+        const res = await apiClient.get('/services?branch=SALON&limit=1000');
         if (res.data.success && res.data.data?.length > 0) {
           setServices(res.data.data);
           setIsUsingFallback(false);
@@ -250,6 +252,40 @@ export default function BookingPage() {
     }
   }, [user]);
 
+  // Derive all active categories from categories API + loaded services
+  const allCategoryList = useMemo(() => {
+    const list: { name: string; count: number }[] = [];
+    const seen = new Set<string>();
+
+    // 1. From categories table
+    categories.forEach((c: any) => {
+      const catName = (typeof c === 'string' ? c : c.name || '').trim();
+      if (catName && !seen.has(catName.toLowerCase())) {
+        seen.add(catName.toLowerCase());
+        const count = services.filter((s: any) => {
+          const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
+          return sCat.trim().toLowerCase() === catName.toLowerCase();
+        }).length;
+        list.push({ name: catName, count });
+      }
+    });
+
+    // 2. From services (in case a service has a category not yet in categories table)
+    services.forEach((s: any) => {
+      const sCat = ((typeof s.category === 'object' ? s.category?.name : s.category) || '').trim();
+      if (sCat && !seen.has(sCat.toLowerCase())) {
+        seen.add(sCat.toLowerCase());
+        const count = services.filter((other: any) => {
+          const oCat = (typeof other.category === 'object' ? other.category?.name : other.category) || '';
+          return oCat.trim().toLowerCase() === sCat.toLowerCase();
+        }).length;
+        list.push({ name: sCat, count });
+      }
+    });
+
+    return list;
+  }, [categories, services]);
+
   // Calculate order total
   const totalAmount = Math.max(0, selectedServices.reduce((sum, s) => sum + s.price, 0) - discount - (redeemPoints ? ((user?.loyaltyPoints || 0) * 10) : 0));
 
@@ -282,7 +318,7 @@ export default function BookingPage() {
 
       if (res.data.success) {
         setShowUpiModal(false);
-        setStep(6); // Move to Success/Confirm step
+        setStep(5); // Move to Success/Confirm step
       } else {
         setError(res.data.message || "Booking failed");
       }
@@ -432,207 +468,246 @@ export default function BookingPage() {
            exit={{ opacity: 0, x: -20 }}
            className="bg-white rounded-[40px] border border-gray-100 p-8 md:p-12 shadow-sm"
         >
+          {/* STEP 0: MULTI-SELECT CATEGORIES */}
           {step === 0 && (
-            <div className="space-y-8">
-              <div className="text-center mb-12">
-                 <h2 className="text-4xl font-black text-gray-900 mb-2">Select Type</h2>
-                 <p className="text-gray-500">What kind of treatment are you looking for?</p>
-              </div>
-              {(() => {
-                const displayMainCategories = isUsingFallback
-                  ? ['Hair', 'Skin', 'Bridal']
-                  : Array.from(new Set(categories.map(c => c.mainCategory || 'General')));
-
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {displayMainCategories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => { 
-                          setActiveMainCategory(cat); 
-                          setSelectedCategories([]); 
-                          nextStep(); 
-                        }}
-                        className={cn(
-                          "p-8 rounded-3xl border-2 text-center transition-all hover:bg-red-50 group",
-                          activeMainCategory?.toLowerCase() === cat?.toLowerCase() ? "border-primary bg-red-50/50" : "border-gray-50 bg-gray-50/30"
-                        )}
-                      >
-                        <h3 className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors uppercase tracking-widest">{cat}</h3>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* STEP 1: MULTI-SELECT CATEGORIES */}
-          {step === 1 && (
             <div className="space-y-8">
               <div className="text-center mb-8">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Select Categories</h2>
-                 <p className="text-gray-500">Pick one or more categories for {activeMainCategory}.</p>
+                 <p className="text-gray-500">Pick one or more categories to explore treatments, or select all.</p>
               </div>
-              {(() => {
-                const availableSubCategories = categories.filter(c => 
-                  !activeMainCategory || c.mainCategory?.toLowerCase() === activeMainCategory?.toLowerCase()
-                );
 
-                const allCatNames = availableSubCategories.map(c => c.name);
-                const isAllSelected = availableSubCategories.length > 0 && availableSubCategories.every(c => selectedCategories.includes(c.name));
+              {/* Quick Search & Actions Bar */}
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Filter categories (e.g. Nails, Hair Treatment, Facial, Spa)..."
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                  {categorySearch && (
+                    <button 
+                      onClick={() => setCategorySearch("")} 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-600"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
 
-                const toggleSelectAll = () => {
-                  if (isAllSelected) {
-                    setSelectedCategories([]);
-                  } else {
-                    setSelectedCategories(allCatNames);
-                  }
-                };
-
-                const toggleCategory = (catName: string) => {
-                  setSelectedCategories(prev => 
-                    prev.includes(catName) ? prev.filter(c => c !== catName) : [...prev, catName]
-                  );
-                };
-
-                return (
-                  <div className="space-y-6">
-                    {availableSubCategories.length === 0 ? (
-                      <div className="py-12 text-center text-gray-400 font-bold">
-                        <p>No subcategories found for {activeMainCategory}.</p>
-                        <button onClick={nextStep} className="mt-4 px-6 py-2 bg-primary text-white rounded-full font-bold">
-                          View All Services
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Quick Selection Actions Bar */}
-                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-gray-500">
-                              {selectedCategories.length} of {availableSubCategories.length} selected
-                            </span>
-                            {selectedCategories.length > 1 && (
-                              <span className="text-[10px] font-black uppercase text-primary bg-red-50 px-2.5 py-0.5 rounded-full border border-primary/20">
-                                Multi-Select Active
-                              </span>
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={toggleSelectAll}
-                            className="text-xs font-black text-primary hover:underline"
-                          >
-                            {isAllSelected ? "Deselect All" : "Select All Categories"}
-                          </button>
-                        </div>
-
-                        {/* Interactive Multi-Select Category Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {availableSubCategories.map(cat => {
-                            const isSelected = selectedCategories.includes(cat.name);
-                            return (
-                              <button
-                                key={cat._id}
-                                type="button"
-                                onClick={() => toggleCategory(cat.name)}
-                                className={cn(
-                                  "p-6 rounded-3xl border-2 text-center transition-all relative group flex flex-col justify-between h-36",
-                                  isSelected 
-                                    ? "border-primary bg-red-50/50 shadow-md ring-2 ring-primary/20" 
-                                    : "border-gray-50 bg-gray-50/30 hover:bg-gray-50"
-                                )}
-                              >
-                                <div className="flex justify-end w-full">
-                                  <div className={cn(
-                                    "w-5 h-5 rounded-full flex items-center justify-center transition-all",
-                                    isSelected ? "bg-primary text-white" : "border-2 border-gray-300"
-                                  )}>
-                                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                  </div>
-                                </div>
-
-                                <div className="my-auto">
-                                  <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors leading-tight">
-                                    {cat.name}
-                                  </h4>
-                                  <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-wider">{cat.gender || 'All'}</p>
-                                </div>
-
-                                <div className="text-[10px] font-bold text-gray-400">
-                                  {isSelected ? <span className="text-primary font-black">Selected</span> : "Tap to select"}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Step Navigation Bar */}
-                        <div className="flex justify-between items-center pt-8 border-t border-gray-100">
-                          <button onClick={prevStep} className="px-8 py-4 font-black flex items-center gap-2 text-gray-400 hover:text-gray-900">
-                            <ChevronLeft className="w-5 h-5" /> Back
-                          </button>
-                          <button
-                            onClick={nextStep}
-                            disabled={selectedCategories.length === 0}
-                            className="px-10 py-4 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-dark transition-all"
-                          >
-                            Continue to Services ({selectedCategories.length})
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </>
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500">
+                      {selectedCategories.length} of {allCategoryList.length} selected
+                    </span>
+                    {selectedCategories.length > 1 && (
+                      <span className="text-[10px] font-black uppercase text-primary bg-red-50 px-2.5 py-0.5 rounded-full border border-primary/20">
+                        Multi-Select Active
+                      </span>
                     )}
                   </div>
-                );
-              })()}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const filteredNames = allCategoryList
+                          .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                          .map(c => c.name);
+                        const isAllSelected = filteredNames.length > 0 && filteredNames.every(name => selectedCategories.includes(name));
+                        if (isAllSelected) {
+                          setSelectedCategories(prev => prev.filter(n => !filteredNames.includes(n)));
+                        } else {
+                          setSelectedCategories(prev => Array.from(new Set([...prev, ...filteredNames])));
+                        }
+                      }}
+                      className="text-xs font-black text-primary hover:underline"
+                    >
+                      {allCategoryList.length > 0 && allCategoryList.every(c => selectedCategories.includes(c.name)) 
+                        ? "Deselect All" 
+                        : "Select All Categories"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Multi-Select Category Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {allCategoryList
+                  .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                  .map(cat => {
+                    const isSelected = selectedCategories.includes(cat.name);
+                    const toggleCategory = () => {
+                      setSelectedCategories(prev => 
+                        prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name]
+                      );
+                    };
+
+                    return (
+                      <button
+                        key={cat.name}
+                        type="button"
+                        onClick={toggleCategory}
+                        className={cn(
+                          "p-6 rounded-3xl border-2 text-center transition-all relative group flex flex-col justify-between h-36",
+                          isSelected 
+                            ? "border-primary bg-red-50/50 shadow-md ring-2 ring-primary/20" 
+                            : "border-gray-50 bg-gray-50/30 hover:bg-gray-50"
+                        )}
+                      >
+                        <div className="flex justify-between items-center w-full">
+                          <span className="text-[10px] font-bold text-gray-400 bg-white/80 px-2 py-0.5 rounded-full border border-gray-100">
+                            {cat.count} {cat.count === 1 ? 'service' : 'services'}
+                          </span>
+                          <div className={cn(
+                            "w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                            isSelected ? "bg-primary text-white" : "border-2 border-gray-300"
+                          )}>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </div>
+                        </div>
+
+                        <div className="my-auto">
+                          <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors leading-tight">
+                            {cat.name}
+                          </h4>
+                        </div>
+
+                        <div className="text-[10px] font-bold text-gray-400">
+                          {isSelected ? <span className="text-primary font-black">Selected</span> : "Tap to select"}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Step Navigation Bar */}
+              <div className="flex justify-between items-center pt-8 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategories(allCategoryList.map(c => c.name));
+                    nextStep();
+                  }}
+                  className="px-6 py-3 font-black text-xs text-gray-500 hover:text-gray-900 underline"
+                >
+                  Skip & View All Services
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={selectedCategories.length === 0}
+                  className="px-10 py-4 bg-primary text-white rounded-full font-black shadow-lg shadow-red-100 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-dark transition-all"
+                >
+                  Continue to Services ({selectedCategories.length})
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* STEP 2: CHOOSE SERVICES (Combined with Category-wise Separation) */}
-          {step === 2 && (
+          {/* STEP 1: CHOOSE SERVICES (Combined with Category-wise Separation) */}
+          {step === 1 && (
             <div className="space-y-8">
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Choose Services</h2>
                  <p className="text-gray-500">
                    {selectedCategories.length > 1 
                      ? `Showing services combined across ${selectedCategories.length} selected categories.`
                      : "Select one or more services to add to your appointment."}
                  </p>
-                 {selectedCategories.length > 0 && (
-                   <div className="flex flex-wrap justify-center gap-1.5 mt-3">
-                     {selectedCategories.map(c => (
-                       <span key={c} className="text-[10px] font-black uppercase bg-red-50 text-primary px-3 py-1 rounded-full border border-primary/20">
-                         {c}
-                       </span>
-                     ))}
-                   </div>
-                 )}
               </div>
+
+              {/* Instant Search Bar and Category Toggle Pills */}
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search treatments by name (e.g. test, Haircut, Hydra Facial)..."
+                    value={serviceSearch}
+                    onChange={(e) => setServiceSearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                  {serviceSearch && (
+                    <button 
+                      onClick={() => setServiceSearch("")} 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-gray-600"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Pills Bar */}
+                {allCategoryList.length > 0 && (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-xs font-black uppercase text-gray-400 mr-1">Categories:</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories([])}
+                      className={cn(
+                        "text-xs font-bold px-3 py-1.5 rounded-full transition-all border",
+                        selectedCategories.length === 0 
+                          ? "bg-gray-900 text-white border-gray-900" 
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                      )}
+                    >
+                      All ({services.length})
+                    </button>
+                    {allCategoryList.map(cat => {
+                      const isSel = selectedCategories.includes(cat.name);
+                      return (
+                        <button
+                          key={cat.name}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategories(prev => 
+                              prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name]
+                            );
+                          }}
+                          className={cn(
+                            "text-xs font-bold px-3 py-1.5 rounded-full transition-all border flex items-center gap-1.5",
+                            isSel 
+                              ? "bg-primary text-white border-primary shadow-sm" 
+                              : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                          )}
+                        >
+                          {cat.name}
+                          <span className={cn(
+                            "text-[10px] px-1.5 py-0.2 rounded-full",
+                            isSel ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                          )}>
+                            {cat.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {(() => {
-                // 1. Filter services belonging to any of the selected categories (or main category fallback)
+                // 1. Filter services based on category selection & service search
                 const filteredServices = services.filter(s => {
                   const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
-                  if (selectedCategories.length > 0) {
-                    return selectedCategories.some(sc => sc?.trim().toLowerCase() === sCat?.trim().toLowerCase());
-                  }
-                  if (activeMainCategory) {
-                    const sMain = s.mainCategory || (typeof s.category === 'object' ? s.category?.mainCategory : s.category);
-                    return sMain?.trim().toLowerCase() === activeMainCategory?.trim().toLowerCase();
-                  }
-                  return true;
+                  const matchesCat = selectedCategories.length === 0 || selectedCategories.some(sc => sc?.trim().toLowerCase() === sCat?.trim().toLowerCase());
+                  const matchesSearch = !serviceSearch.trim() || 
+                    s.name?.toLowerCase().includes(serviceSearch.toLowerCase()) || 
+                    s.description?.toLowerCase().includes(serviceSearch.toLowerCase()) ||
+                    sCat?.toLowerCase().includes(serviceSearch.toLowerCase());
+                  return matchesCat && matchesSearch;
                 });
 
                 // 2. Group the filtered services category-wise
-                const activeCatList = selectedCategories.length > 0 
-                  ? selectedCategories 
-                  : Array.from(new Set(filteredServices.map(s => typeof s.category === 'object' ? s.category?.name : s.category)));
+                const catGroupNames = Array.from(new Set(filteredServices.map(s => {
+                  return (typeof s.category === 'object' ? s.category?.name : s.category) || 'General';
+                })));
 
-                const groupedByCategory = activeCatList.map(catName => {
+                const groupedByCategory = catGroupNames.map(catName => {
                   const catServices = filteredServices.filter(s => {
-                    const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
+                    const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || 'General';
                     return sCat?.trim().toLowerCase() === catName?.trim().toLowerCase();
                   });
                   return {
@@ -646,9 +721,11 @@ export default function BookingPage() {
                     {groupedByCategory.length === 0 ? (
                       <div className="py-16 text-center bg-gray-50/50 rounded-3xl border border-gray-100 p-8 space-y-4">
                         <Scissors className="w-12 h-12 text-gray-300 mx-auto" />
-                        <h4 className="text-xl font-black text-gray-800">No Services Found In Selected Category</h4>
+                        <h4 className="text-xl font-black text-gray-800">No Services Found</h4>
                         <p className="text-sm text-gray-500 font-medium max-w-md mx-auto">
-                          There are currently no cataloged services under <strong className="text-gray-900">"{selectedCategories.join(', ')}"</strong>. You can select another category or view all available services.
+                          {serviceSearch 
+                            ? `No treatments matching "${serviceSearch}". Try another keyword or clear search.`
+                            : `There are currently no cataloged services under selected categories. You can select another category or view all.`}
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                           <button
@@ -656,11 +733,11 @@ export default function BookingPage() {
                             onClick={prevStep}
                             className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full text-xs font-black hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
                           >
-                            <ChevronLeft className="w-4 h-4" /> Choose Different Category
+                            <ChevronLeft className="w-4 h-4" /> Categories
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSelectedCategories([])}
+                            onClick={() => { setSelectedCategories([]); setServiceSearch(""); }}
                             className="px-6 py-3 bg-primary text-white rounded-full text-xs font-black hover:bg-primary-dark transition-colors shadow-lg shadow-red-100"
                           >
                             View All Available Services
@@ -713,6 +790,9 @@ export default function BookingPage() {
                                     <p className="text-xs text-gray-400 font-bold flex items-center gap-1">
                                       <Clock className="w-3.5 h-3.5" /> {s.duration} mins
                                     </p>
+                                    {s.description && (
+                                      <p className="text-xs text-gray-500 line-clamp-1 mt-1 font-medium">{s.description}</p>
+                                    )}
                                   </div>
                                   <div className="flex items-center justify-between mt-auto">
                                      <span className="text-[10px] font-black uppercase text-gray-400">{group.categoryName}</span>
@@ -760,8 +840,8 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 3: SCHEDULE (Smart Salon Open/Close Time and Today Cutoff) */}
-          {step === 3 && (
+          {/* STEP 2: SCHEDULE (Smart Salon Open/Close Time and Today Cutoff) */}
+          {step === 2 && (
             <div className="space-y-8">
                <div className="text-center mb-10">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Build Your Schedule</h2>
@@ -907,7 +987,8 @@ export default function BookingPage() {
             </div>
           )}
 
-          {step === 4 && (
+          {/* STEP 3: DETAILS */}
+          {step === 3 && (
             <div className="space-y-8">
               <div className="text-center mb-12">
                  <h2 className="text-4xl font-black text-gray-900 mb-2">Final Details</h2>
@@ -974,8 +1055,8 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 5: SECURE CHECKOUT (Debit/Credit Card Removed, Dynamic UPI QR with 5-minute Match) */}
-          {step === 5 && (
+          {/* STEP 4: SECURE CHECKOUT (Debit/Credit Card Removed, Dynamic UPI QR with 5-minute Match) */}
+          {step === 4 && (
              <div className="space-y-8">
                 <div className="text-center mb-12">
                    <h2 className="text-4xl font-black text-gray-900 mb-2">Secure Checkout</h2>
@@ -1152,8 +1233,8 @@ export default function BookingPage() {
              </div>
           )}
 
-          {/* STEP 6: SUCCESSFUL BOOKING */}
-          {step === 6 && (
+          {/* STEP 5: SUCCESSFUL BOOKING */}
+          {step === 5 && (
             <div className="text-center py-12 space-y-8">
                <motion.div 
                  initial={{ scale: 0 }}

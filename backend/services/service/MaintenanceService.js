@@ -15,7 +15,7 @@ class MaintenanceService {
       queryObj.name = { $regex: query.search, $options: 'i' };
     }
 
-    const limit = parseInt(query.limit) || 100;
+    const limit = parseInt(query.limit) || 1000;
     const services = await Service.find(queryObj).limit(limit).sort('category name');
     
     return {
