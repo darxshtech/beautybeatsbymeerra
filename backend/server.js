@@ -6,9 +6,6 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
-// Connect to database
-connectDB();
-
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 

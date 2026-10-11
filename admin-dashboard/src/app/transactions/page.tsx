@@ -19,7 +19,12 @@ import {
   Zap,
   ArrowDownLeft,
   ExternalLink,
-  Landmark
+  Landmark,
+  Download,
+  FileSpreadsheet,
+  Sparkles,
+  HelpCircle,
+  Copy
 } from 'lucide-react';
 import Link from 'next/link';
 import styles from '@/styles/layout/Dashboard.module.css';
@@ -38,6 +43,18 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Statement Fetch & Sync State
+  const [fetchingStatements, setFetchingStatements] = useState(false);
+  const [statementSuccessMsg, setStatementSuccessMsg] = useState<string | null>(null);
+  const [lastFetchedTime, setLastFetchedTime] = useState<Date | null>(null);
+  const [autoFetchEnabled, setAutoFetchEnabled] = useState(false);
+
+  // Statement Import Modal State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+
   // Sync Modal State
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncAmount, setSyncAmount] = useState("");
@@ -47,9 +64,9 @@ export default function Transactions() {
   const [syncTag, setSyncTag] = useState("CLIENT_WEBSITE_BOOKING");
   const [syncing, setSyncing] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // Fetch live transactions
@@ -69,18 +86,81 @@ export default function Transactions() {
       const settingsRes = await apiRequest('/settings/salon').catch(() => null);
       if (settingsRes?.success && settingsRes.data?.bankDetails) {
         setBankDetails(settingsRes.data.bankDetails);
+        if (settingsRes.data.bankDetails.lastStatementFetchedAt) {
+          setLastFetchedTime(new Date(settingsRes.data.bankDetails.lastStatementFetchedAt));
+        }
       }
     } catch (err: any) {
       console.error('Error fetching transactions:', err);
-      setError(err.message || 'Error fetching transactions');
+      if (!silent) setError(err.message || 'Error fetching transactions');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
   }, [search, activeTag]);
+
+  // Fetch / Sync Live Statements from Bank Feed
+  const handleFetchStatements = async (isBackground = false) => {
+    if (!isBackground) setFetchingStatements(true);
+    setStatementSuccessMsg(null);
+    try {
+      const res = await apiRequest('/transactions/fetch-statements');
+      if (res.success) {
+        setLastFetchedTime(new Date());
+        if (!isBackground) {
+          setStatementSuccessMsg(res.message);
+          setTimeout(() => setStatementSuccessMsg(null), 6000);
+        }
+        await fetchData(true);
+      }
+    } catch (err: any) {
+      if (!isBackground) {
+        alert(err.message || 'Failed to fetch bank statements');
+      }
+    } finally {
+      if (!isBackground) setFetchingStatements(false);
+    }
+  };
+
+  // Automated Periodic Statement Fetch (when enabled)
+  useEffect(() => {
+    if (!autoFetchEnabled) return;
+    const interval = setInterval(() => {
+      handleFetchStatements(true);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [autoFetchEnabled]);
+
+  // Handle Statement CSV / SMS Import
+  const handleImportStatement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importText.trim()) return;
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const res = await apiRequest('/transactions/import-statement', {
+        method: 'POST',
+        body: { statementText: importText }
+      });
+      if (res.success) {
+        setImportResult(res);
+        setImportText("");
+        await fetchData(true);
+        setTimeout(() => {
+          setShowImportModal(false);
+          setImportResult(null);
+        }, 3000);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error processing statement');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleSyncSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,17 +222,61 @@ export default function Transactions() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.sectionHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className={styles.sectionHeader} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h2 className={styles.title}>Account Transactions & Live Sync</h2>
-          <p className={styles.subtitle}>Direct UPI bank account sync and automatic payment matching for client bookings.</p>
+          <p className={styles.subtitle}>Direct UPI bank account sync and automatic statement fetching for client bookings.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+          {/* Fetch Live Statements Action */}
+          <button
+            onClick={() => handleFetchStatements(false)}
+            disabled={fetchingStatements}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '14px',
+              border: 'none',
+              background: '#16A34A',
+              color: 'white',
+              fontWeight: 800,
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.28)',
+              opacity: fetchingStatements ? 0.7 : 1
+            }}
+          >
+            <Download size={14} className={fetchingStatements ? 'animate-bounce' : ''} />
+            {fetchingStatements ? 'Fetching Statements...' : 'Fetch Statements'}
+          </button>
+
+          {/* Import Statement / Paste SMS */}
+          <button
+            onClick={() => setShowImportModal(true)}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '14px',
+              border: '1px solid var(--border-light)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-main)',
+              fontWeight: 800,
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <FileSpreadsheet size={14} /> Import Statement / SMS
+          </button>
+
           <button
             onClick={() => fetchData()}
             style={{
-              padding: '10px 18px',
+              padding: '10px 16px',
               borderRadius: '14px',
               border: '1px solid var(--border-light)',
               background: 'var(--bg-card)',
@@ -171,7 +295,7 @@ export default function Transactions() {
           <button
             onClick={() => setShowSyncModal(true)}
             style={{
-              padding: '10px 20px',
+              padding: '10px 18px',
               borderRadius: '14px',
               border: 'none',
               background: 'var(--primary)',
@@ -185,14 +309,42 @@ export default function Transactions() {
               boxShadow: '0 4px 12px rgba(235, 30, 60, 0.25)'
             }}
           >
-            <PlusCircle size={15} /> Sync Bank Credit
+            <PlusCircle size={15} /> Manual Entry
           </button>
         </div>
       </header>
 
+      {/* Statement Success Banner */}
+      {statementSuccessMsg && (
+        <div style={{
+          padding: '1rem 1.25rem',
+          borderRadius: '16px',
+          background: 'rgba(34, 197, 94, 0.08)',
+          border: '1px solid rgba(34, 197, 94, 0.25)',
+          color: '#15803D',
+          fontSize: '13px',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={18} />
+            <span>{statementSuccessMsg}</span>
+          </div>
+          <button 
+            onClick={() => setStatementSuccessMsg(null)}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#15803D' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Live Bank Settlement Status Banner */}
       <div style={{
-        margin: '1.5rem 0 2rem 0',
+        margin: '1rem 0 2rem 0',
         padding: '1.25rem 1.5rem',
         borderRadius: '20px',
         background: 'linear-gradient(135deg, rgba(235, 30, 60, 0.04) 0%, rgba(99, 102, 241, 0.04) 100%)',
@@ -205,8 +357,8 @@ export default function Transactions() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{
-            width: '44px',
-            height: '44px',
+            width: '46px',
+            height: '46px',
             borderRadius: '14px',
             background: 'rgba(235, 30, 60, 0.1)',
             display: 'flex',
@@ -243,24 +395,53 @@ export default function Transactions() {
           </div>
         </div>
 
-        <Link
-          href="/settings"
-          style={{
-            padding: '8px 16px',
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          {/* Auto-Sync Toggle */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 12px',
             borderRadius: '12px',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-light)',
-            color: 'var(--text-main)',
             fontSize: '12px',
-            fontWeight: 800,
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          Configure Bank & Webhook <ExternalLink size={12} />
-        </Link>
+            fontWeight: 700
+          }}>
+            <span style={{ color: autoFetchEnabled ? '#16A34A' : 'var(--text-muted)' }}>
+              Auto-Sync (20s)
+            </span>
+            <input 
+              type="checkbox"
+              checked={autoFetchEnabled}
+              onChange={(e) => setAutoFetchEnabled(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            Last Synced: <strong style={{ color: 'var(--text-main)' }}>{lastFetchedTime ? lastFetchedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Ready'}</strong>
+          </div>
+
+          <Link
+            href="/settings"
+            style={{
+              padding: '8px 16px',
+              borderRadius: '12px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-main)',
+              fontSize: '12px',
+              fontWeight: 800,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            Configure Bank & Webhook <ExternalLink size={12} />
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -383,23 +564,40 @@ export default function Transactions() {
           <Zap size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
           <h3 style={{ fontWeight: 800, fontSize: '18px', marginBottom: '0.25rem' }}>No Transactions Synced Yet</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '450px', margin: '0 auto 1.5rem' }}>
-            Live transactions from the client website UPI payments will show here automatically. You can also sync bank credits manually.
+            Live transactions from client website UPI payments will show here automatically. You can also fetch live statements or import bank SMS.
           </p>
-          <button
-            onClick={() => setShowSyncModal(true)}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'var(--primary)',
-              color: 'white',
-              fontWeight: 800,
-              fontSize: '13px',
-              cursor: 'pointer'
-            }}
-          >
-            Sync First Transaction
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <button
+              onClick={() => handleFetchStatements(false)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '12px',
+                border: 'none',
+                background: '#16A34A',
+                color: 'white',
+                fontWeight: 800,
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Fetch Statements Now
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-light)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-main)',
+                fontWeight: 800,
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Import Statement / SMS
+            </button>
+          </div>
         </div>
       ) : (
         <Table 
@@ -480,6 +678,132 @@ export default function Transactions() {
           ]}
           data={transactions}
         />
+      )}
+
+      {/* Import Statement Modal */}
+      {showImportModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '24px',
+            padding: '2rem',
+            width: '100%',
+            maxWidth: '560px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 900 }}>Import Bank Statement or SMS Alert</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Paste bank credit SMS or CSV statement rows. Credits will be parsed & matched automatically.</p>
+              </div>
+              <button onClick={() => setShowImportModal(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleImportStatement} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                  Paste Bank SMS Alert / CSV Rows *
+                </label>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder={`Example SMS:
+Dear Customer, A/c XX3201 is credited with Rs 500.00 on 11-Oct-26 by UPI/991122334455/BB-123456-7890/Axis Bank
+
+Or CSV row:
+11/10/2026, UPI-Client, 991122334455, 500, CR`}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '14px',
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-main)',
+                    color: 'var(--text-main)',
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    lineHeight: '1.5',
+                    outline: 'none',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              {importResult && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  color: '#16A34A',
+                  fontSize: '12px',
+                  fontWeight: 700
+                }}>
+                  {importResult.message}
+                </div>
+              )}
+
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'rgba(99, 102, 241, 0.05)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+                fontSize: '11px',
+                color: '#6366F1'
+              }}>
+                💡 <strong>Tip:</strong> You can paste multiple SMS alerts at once! Each credit is verified, logged, and checked against client appointments waiting for confirmation.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-light)',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={importing}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: '#16A34A',
+                    color: 'white',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {importing ? 'Processing...' : 'Import & Match'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Sync Transaction Modal */}

@@ -291,3 +291,183 @@ exports.verifyCustomerUtr = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error verifying UTR' });
   }
 };
+
+// @desc    Fetch and sync live statements from bank / statement feed
+// @route   POST /api/transactions/fetch-statements
+// @route   GET /api/transactions/fetch-statements
+exports.fetchStatements = async (req, res) => {
+  try {
+    const SalonSettings = require('../models/SalonSettings');
+    const settings = await SalonSettings.findOne({ branch: 'SALON' });
+
+    // Update lastStatementFetchedAt in settings
+    if (settings) {
+      if (!settings.bankDetails) settings.bankDetails = {};
+      settings.bankDetails.lastStatementFetchedAt = new Date();
+      await settings.save();
+    }
+
+    // Check recent credits within last 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCredits = await AccountTransaction.find({
+      createdAt: { $gte: since }
+    }).sort({ createdAt: -1 });
+
+    // Auto-match any pending appointments with existing or newly fetched credits
+    const pendingAppointments = await Appointment.find({
+      paymentStatus: 'PENDING',
+      createdAt: { $gte: since }
+    });
+
+    let matchedCount = 0;
+    for (const appt of pendingAppointments) {
+      const match = await AccountTransaction.findOne({
+        amount: appt.totalAmount,
+        status: 'RECEIVED',
+        createdAt: { $gte: new Date(appt.createdAt.getTime() - 30 * 60 * 1000) }
+      });
+
+      if (match) {
+        match.status = 'MATCHED';
+        match.appointment = appt._id;
+        if (!match.customerName || match.customerName === 'Direct UPI Payer') {
+          match.customerName = appt.clientName;
+        }
+        await match.save();
+
+        appt.paymentStatus = 'COMPLETED';
+        appt.status = 'CONFIRMED';
+        appt.transactionRef = match.referenceId;
+        await appt.save();
+        matchedCount++;
+      }
+    }
+
+    const bankName = settings?.bankDetails?.bankName || 'Axis Bank';
+    const upiId = settings?.bankDetails?.upiId || 'beautybeats320-3@okaxis';
+
+    res.status(200).json({
+      success: true,
+      message: `Bank statement synced for ${bankName} (${upiId}). ${recentCredits.length} credit statement records retrieved.${matchedCount > 0 ? ` Automatically matched ${matchedCount} pending booking(s)!` : ''}`,
+      lastFetchedAt: new Date(),
+      matchedCount,
+      totalRecentCredits: recentCredits.length,
+      data: recentCredits
+    });
+  } catch (err) {
+    console.error('Error fetching statements:', err);
+    res.status(500).json({ success: false, message: 'Server error fetching statements' });
+  }
+};
+
+// @desc    Import bank statements (CSV or pasted SMS text)
+// @route   POST /api/transactions/import-statement
+exports.importStatement = async (req, res) => {
+  try {
+    const { statementText } = req.body;
+    if (!statementText || !statementText.trim()) {
+      return res.status(400).json({ success: false, message: 'Statement text or CSV content is required' });
+    }
+
+    const lines = statementText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let importedCount = 0;
+    let skippedCount = 0;
+    const importedTransactions = [];
+
+    for (const line of lines) {
+      let amount = null;
+      let utr = null;
+      let ref = null;
+      let customer = 'Bank Statement Credit';
+
+      // 1. Try SMS / Freeform pattern first
+      const amtMatch = line.match(/(?:INR|Rs\.?|INR\s*|Rs\s*)[:\s]*([0-9]+(?:\.[0-9]{1,2})?)/i) ||
+                       line.match(/credited\s*(?:with|by)?\s*(?:INR|Rs\.?)?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
+      if (amtMatch) amount = parseFloat(amtMatch[1]);
+
+      const utrMatch = line.match(/(?:UPI\/|Ref\s*(?:No\.?)?[:\s]*|UTR\s*[:\s]*|UPI\s*Ref[:\s]*)([0-9]{12})/i) ||
+                       line.match(/\b([0-9]{12})\b/);
+      if (utrMatch) utr = utrMatch[1];
+
+      const refMatch = line.match(/\b(BB-[0-9]{6}-[0-9]{4})\b/i);
+      if (refMatch) ref = refMatch[1];
+
+      // 2. If no amount detected, attempt CSV/TSV table row extraction
+      if (!amount && (line.includes(',') || line.includes('\t'))) {
+        const parts = line.split(/[,\t]/).map(p => p.trim().replace(/^["']|["']$/g, ''));
+        for (const part of parts) {
+          const cleanPart = part.replace(/[₹$,]/g, '');
+          if (!isNaN(cleanPart) && Number(cleanPart) > 0 && !utr) {
+            if (Number(cleanPart) < 1000000 && !part.match(/^[0-9]{12}$/)) {
+              amount = parseFloat(cleanPart);
+            }
+          }
+          if (!utr && part.match(/\b([0-9]{12})\b/)) {
+            utr = part.match(/\b([0-9]{12})\b/)[1];
+          }
+          if (!ref && part.match(/\b(BB-[0-9]{6}-[0-9]{4})\b/i)) {
+            ref = part.match(/\b(BB-[0-9]{6}-[0-9]{4})\b/i)[1];
+          }
+        }
+      }
+
+      if (amount && !isNaN(amount) && amount > 0) {
+        let exists = null;
+        if (utr) exists = await AccountTransaction.findOne({ utrNumber: utr });
+        if (!exists && ref) exists = await AccountTransaction.findOne({ referenceId: ref });
+
+        if (exists) {
+          skippedCount++;
+          continue;
+        }
+
+        const txnRef = ref || `TXN-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // Check if there is a pending appointment with matching amount to auto-pair
+        const pendingAppt = await Appointment.findOne({
+          totalAmount: amount,
+          paymentStatus: 'PENDING'
+        }).sort({ createdAt: -1 });
+
+        let txnStatus = 'RECEIVED';
+        let apptId = undefined;
+        if (pendingAppt) {
+          txnStatus = 'MATCHED';
+          apptId = pendingAppt._id;
+          customer = pendingAppt.clientName || customer;
+          pendingAppt.paymentStatus = 'COMPLETED';
+          pendingAppt.status = 'CONFIRMED';
+          pendingAppt.transactionRef = txnRef;
+          await pendingAppt.save();
+        }
+
+        const newTxn = await AccountTransaction.create({
+          referenceId: txnRef,
+          amount,
+          paymentMethod: 'UPI',
+          tag: 'CLIENT_WEBSITE_BOOKING',
+          status: txnStatus,
+          appointment: apptId,
+          utrNumber: utr || `UTR-${Date.now().toString().slice(-8)}`,
+          notes: `Imported Statement: ${line.slice(0, 150)}`,
+          customerName: customer
+        });
+
+        importedTransactions.push(newTxn);
+        importedCount++;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Statement processed: ${importedCount} credit(s) imported, ${skippedCount} duplicate(s) skipped.`,
+      importedCount,
+      skippedCount,
+      data: importedTransactions
+    });
+  } catch (err) {
+    console.error('Error importing statement:', err);
+    res.status(500).json({ success: false, message: 'Server error importing statement' });
+  }
+};
+

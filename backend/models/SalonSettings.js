@@ -33,7 +33,13 @@ const SalonSettingsSchema = new mongoose.Schema({
     accountNumber: { type: String, default: '' },
     ifscCode: { type: String, default: '' },
     upiId: { type: String, default: 'beautybeats320-3@okaxis' },
-    webhookSecret: { type: String, default: 'bb_secure_webhook_key' }
+    webhookSecret: { type: String, default: 'bb_secure_webhook_key' },
+    statementSyncMethod: { 
+      type: String, 
+      enum: ['LIVE_WEBHOOK_SMS', 'BANK_OPEN_API', 'MANUAL_STATEMENT_IMPORT'], 
+      default: 'LIVE_WEBHOOK_SMS' 
+    },
+    lastStatementFetchedAt: { type: Date }
   }
 }, {
   timestamps: true
